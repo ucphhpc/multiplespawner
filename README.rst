@@ -1,5 +1,5 @@
-==================
-distributedspawner
-==================
+===============
+multiplespawner
+===============
 
-A JupyterHub spawner across a distribution of resources
+A JupyterHub Spawner that supports multiple concurrent spawners.
