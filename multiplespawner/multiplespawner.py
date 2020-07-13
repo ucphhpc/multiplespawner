@@ -47,7 +47,8 @@ class MultipleSpawner(Spawner):
 
     notebook = Dict(default_value=None, config=False)
 
-    # TODO, Dynamically load the config file and populate the class properties when the options_form is being rendered
+    # TODO, Dynamically load the config file and populate
+    # the class properties when the options_form is being rendered
     @default("options_form")
     def _default_options_form(self):
         resource_types = self._get_resource_types()
@@ -94,7 +95,8 @@ class MultipleSpawner(Spawner):
             type_options=type_options, spec_options=spec_options
         )
 
-        # TODO, add javascript to form -> present either option to select environment or image
+        # TODO, add javascript to form -> present either
+        # option to select environment or image
         return form
 
     async def options_from_form(self, formdata):
