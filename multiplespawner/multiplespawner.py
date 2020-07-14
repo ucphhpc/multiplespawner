@@ -1,5 +1,6 @@
 import os
 from jupyterhub.spawner import Spawner
+from textwrap import dedent
 from traitlets import (
     Any,
     Bool,
@@ -14,35 +15,18 @@ from traitlets import (
     observe,
     validate,
 )
+from multiplespawner.runtime.resource import ResourceSpecification, ResourceTypes
+from multiplespawner.session import SessionConfiguration
 
 
 class MultipleSpawner(Spawner):
 
-    resource_types = List(
-        trait=Unicode(),
-        allow_none=False,
-        default_value=["Virtual Machine", "Container"],
-        help="The list of available resource types",
-    )
-
-    resource_specs = List(
-        trait=Unicode(),
-        allow_none=False,
-        default_value=[],
-        help="The list of available resource specifications",
-    )
-
-    # [{"name": "Default",
-    #     "disk": "10_gb",
-    #     "memory": "2_gb"
-    #     "accelerators": []}]
-
     config_file = String(
         trait=Unicode(),
         default_value=os.path.join(
-            os.path.expanduser(".jupyterhub/multiplespawner.json ")
+            os.path.expanduser(".multiplespawner"), "config.json"
         ),
-        help="Path to the Multiple Spawner json configuration file",
+        help="Path to the MultipleSpawner json configuration file",
     )
 
     notebook = Dict(default_value=None, config=False)
@@ -51,50 +35,61 @@ class MultipleSpawner(Spawner):
     # the class properties when the options_form is being rendered
     @default("options_form")
     def _default_options_form(self):
-        resource_types = self._get_resource_types()
-        default_type = resource_types[0]
+        # Resource Types
+        # resource_types = ResourceTypes
 
-        resource_specs = self._get_resource_specs()
-        default_spec = resource_specs[0]
+        # # Resource Specification
+        # resource_spec = ResourceSpecification()
+        # resource_spec_attrs = ResourceSpecification.attributes()
 
-        # TODO, add resource_lifetime, hours, min, secs
+        # resource_options = []
+        # for resource_attr in resource_spec_attrs:
+        #     option_attribute = (
+        #         '<option value="{resource_attr}">{resource_attr}</option>'
+        #     )
+        #     resource_options.append(
+        #         option_attribute.format(
+        #             resource_attr=getattr(resource_spec, resource_attr),
+        #         )
+        #     )
 
-        option_type = (
-            '<option value="{resource_type}" {selected}>{resource_type}</option>'
-        )
-        type_options = [
-            option_type.format(
-                resource_type=resource_type,
-                selected="selected" if resource_type == default_type else "",
-            )
-            for resource_type in resource_types
-        ]
+        # # Runtime configuration
+        # # Resource specs
+        # option_spec = (
+        #     '<option value="{resource_spec}" {selected}>{resource_spec}</option>'
+        # )
+        # spec_options = [
+        #     option_spec.format(
+        #         resource_spec=resource_spec,
+        #         selected="selected" if resource_spec == default_spec else "",
+        #     )
+        #     for resource_spec in resource_specs
+        # ]
 
-        option_spec = (
-            '<option value="{resource_spec}" {selected}>{resource_spec}</option>'
-        )
-        spec_options = [
-            option_spec.format(
-                resource_spec=resource_spec,
-                selected="selected" if resource_spec == default_spec else "",
-            )
-            for resource_spec in resource_specs
-        ]
+        # session_conf_attrs = SessionConfiguration.attributes()
 
-        form = """
-            <label for="resource_type">Select a Resource Type:</label>
-            <select class="form-control" name="resource_type" required autofocus>
-                {type_options}
-            </select>
+        # form = """ """
+        # for 
 
-            <label for="resource_spec">Select a Resource Spec:</label>
-            <select class="form-control" name="resource_spec" required>
-                {spec_options}
-            </select>
-        """.format(
-            type_options=type_options, spec_options=spec_options
-        )
 
+        # form = """
+        #     <label for="resource_options">Resource Configuration:</label>
+        #     <input ></input>
+
+        #     <select class="form-control" name="resource_options" required autofocus>
+        #         {resource_options}
+        #     </select>
+
+        #     <label for="resource_spec">Select a Resource Spec:</label>
+        #     <select class="form-control" name="resource_spec" required>
+        #         {spec_options}
+        #     </select>
+        # """.format(
+        #     type_options=type_options,
+        #     spec_options=spec_options
+        # )
+
+        form = """ """
         # TODO, add javascript to form -> present either
         # option to select environment or image
         return form
@@ -110,14 +105,9 @@ class MultipleSpawner(Spawner):
 
         return options
 
-    def _get_resource_types(self):
-        return self.resource_types
 
-    def _get_resource_specs(self):
-        return self.resource_specs
-
-    def load_state(self):
-        state = super(MultipleSpawner, self).load_state(self)
+    def load_state(self, state):
+        super(MultipleSpawner, self).load_state(state)
         self.set_notebook(id=state.get("notebook_id", ""))
         return state
 
@@ -134,11 +124,23 @@ class MultipleSpawner(Spawner):
 
     async def start(self):
         # Assign to-be notebook -> so that poll finds it
+        # Combine both resource specification
+        # Depends on specified resource type on how we request the resource specification
         self.set_notebook(status="starting")
         ip, port = ("0", 80)
 
-        # TODO, start depends on the spawner used
+        # Translate the resource type into a Spawner type
+        # Find a plausible Spawner configuration
+        # Same resource type
+        resource_type = None
+        spawner = select_spawner(resource_type)
+        # if not a required provider, find an appropriate one
+        provider = find_provider(resource_type)
 
+        scheduled = schedule(spawner)
+
+
+        # TODO, start depends on the spawner used
         self.set_notebook(ip=ip, port=port, status="started")
         return ip, port
 

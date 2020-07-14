@@ -1,0 +1,13 @@
+[
+    {
+        "name": "",
+        "class": "dockerspawner.DockerSpawner",
+        "type": "container"
+    },
+    {
+        "name": "Aws Container Spawner",
+        "class": "aws_fargate_spawner",
+        "type": "container",
+        "provider": "AWS"
+    }
+]

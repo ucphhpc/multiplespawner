@@ -1,0 +1,10 @@
+[
+    {
+        "name": "aws",
+        "types": ["container", "virtual_machine"]
+    },
+    {
+        "name": "oci",
+        "types": ["container", "virtual_machine"]
+    }
+]

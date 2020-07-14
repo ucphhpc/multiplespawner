@@ -1,0 +1,40 @@
+{
+    "specifications": [
+        {
+            "name": "Python Container Notebook",
+            "runtime": {
+                "environment": {
+                    "memory": "1",
+                    "cpu": "",
+                    "accelerators": [] 
+                }
+            },
+            "spawner": {
+                "class_name": "dockerspawner.DockerSpawner",
+                "kwargs": {
+                    "image": "nielsbohr/python-notebook",
+                    "mounts": [
+                        {
+                            "type": "bind",
+                            "source": "/home/{uid}/modi_mount",
+                            "target": "/home/{uid}/modi_mount"}
+                    ],
+                    "name": "Python Notebook"
+                }
+            }
+        },
+        {
+            "name": "",
+            "type": "virtual machine",
+            "orchestrator": "corc.OCIInstanceOrchstrator",
+            "spawner": "",
+            "kwargs": {}
+        }
+    ]
+}
+
+{
+    "runtime": {
+        "environment": 
+    }
+}
