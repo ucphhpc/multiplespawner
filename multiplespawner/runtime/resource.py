@@ -1,5 +1,6 @@
 import enum
 
+
 class ResourceSpecification:
 
     memory = 1
@@ -13,8 +14,6 @@ class ResourceSpecification:
 
 class ResourceTypes(enum.Enum):
 
-    BARE_METAL=1
-    VIRTUAL_MACHINE=2
-    CONTAINER=3
-
-
+    BARE_METAL = 1
+    VIRTUAL_MACHINE = 2
+    CONTAINER = 3

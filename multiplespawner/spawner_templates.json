@@ -1,6 +1,6 @@
 [
     {
-        "name": "",
+        "name": "DockerSpawner",
         "class": "dockerspawner.DockerSpawner",
         "type": "container"
     },
@@ -8,6 +8,12 @@
         "name": "Aws Container Spawner",
         "class": "aws_fargate_spawner",
         "type": "container",
-        "provider": "AWS"
+        "provider": "aws"
+    },
+    {
+        "name": "Aws EC2 Instance",
+        "class": "aws_ec2_spawner",
+        "type": "virtual_machine",
+        "provider": "aws"
     }
 ]

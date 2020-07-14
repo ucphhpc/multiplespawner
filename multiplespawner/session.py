@@ -1,6 +1,6 @@
 class SessionConfiguration:
 
-    # Number of seconds
+    # Number of minutes
     lifetime = 120
 
     @staticmethod

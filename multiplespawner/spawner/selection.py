@@ -1,6 +1,6 @@
+def find_spawner(target_resource):
+    # Load spawner template file
+    spawner_template = None
 
-
-
-def select_spawner(resource_type):
-
-    
+    # Return the spawner
+    return spawner_template
