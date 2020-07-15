@@ -4,3 +4,8 @@ def find_spawner(target_resource):
 
     # Return the spawner
     return spawner_template
+
+def find_provider(target_resource):
+    provider = None
+
+    return provider

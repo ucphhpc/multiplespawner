@@ -4,12 +4,12 @@ import enum
 class ResourceSpecification:
 
     memory = 1
-    cpu = 1
+    cpus = 1
     accelerators = []
 
     @staticmethod
     def attributes():
-        return ["memory", "cpu", "accelerators"]
+        return ["memory", "cpus", "accelerators"]
 
 
 class ResourceTypes(enum.Enum):
