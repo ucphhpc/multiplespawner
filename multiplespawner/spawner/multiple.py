@@ -1,24 +1,11 @@
 import os
 from jupyterhub.spawner import Spawner
-from textwrap import dedent
-from traitlets import (
-    Any,
-    Bool,
-    CaselessStrEnum,
-    Dict,
-    List,
-    Int,
-    Unicode,
-    Union,
-    default,
-    observe,
-    validate,
-)
+from traitlets import Dict, Unicode, default
+from multiplespawner.orchestration.orchestration import create_orchestrator_pool
 from multiplespawner.runtime.resource import ResourceSpecification, ResourceTypes
 from multiplespawner.session import SessionConfiguration
-from multiplespawner.spawner.configuration import configure_spawner
-from multiplespawner.spawner.scheduler import schedule
-from multiplespawner.spawner.selection import find_spawner, find_provider
+from multiplespawner.spawner.scheduler import Scheduler, create_schedule_task_template
+from multiplespawner.spawner.selection import get_available_providers
 
 
 class MultipleSpawner(Spawner):
@@ -37,6 +24,17 @@ class MultipleSpawner(Spawner):
     # the class properties when the options_form is being rendered
     @default("options_form")
     def _default_options_form(self):
+        # Available providers
+        providers = get_available_providers()
+        default_provider = providers[0]
+        option_provider = '<option value="{provider}" {selected}>{provider}</option>'
+        provider_options = [
+            option_provider.format(
+                provider=provider,
+                selected="selected" if provider == default_provider else "",
+            )
+            for provider in providers
+        ]
 
         # Resource Types
         resource_types = ResourceTypes
@@ -58,24 +56,18 @@ class MultipleSpawner(Spawner):
 
         resource_spec_options = []
         for resource_attr in resource_spec_attrs:
-            input_entry = (
-                '<div class="form-group">'
-            )
+            input_entry = '<div class="form-group">'
             label_attribute = (
                 '<small class="form-text text-muted">{resource_attr}:</small>'
             )
-            input_attribute = (
-                '<input name="{resource_attr}" class="form-control" type="text" value="{resource_value}" placeholder="{resource_attr}">'
-            )
-            input_end = (
-                '</div>'
-            )
+            input_attribute = '<input name="{resource_attr}" class="form-control" \
+                              "type="text" value="{resource_value}" \
+                              "placeholder="{resource_attr}">'
+            input_end = "</div>"
 
             resource_spec_options.append(input_entry)
             resource_spec_options.append(
-                label_attribute.format(
-                    resource_attr=resource_attr
-                )
+                label_attribute.format(resource_attr=resource_attr)
             )
             resource_spec_options.append(
                 input_attribute.format(
@@ -83,9 +75,7 @@ class MultipleSpawner(Spawner):
                     resource_value=getattr(resource_spec, resource_attr),
                 )
             )
-            resource_spec_options.append(
-                input_end
-            )
+            resource_spec_options.append(input_end)
 
         # Runtime configuration
         session_conf = SessionConfiguration()
@@ -93,23 +83,17 @@ class MultipleSpawner(Spawner):
 
         session_options = []
         for session_conf_attr in session_conf_attrs:
-            input_entry = (
-                '<div class="form-group">'
-            )
+            input_entry = '<div class="form-group">'
             label_attribute = (
                 '<small class="form-text text-muted">{session_conf_attr}:</small>'
             )
-            input_attribute = '<input name="{session_conf_attr}" type="text" value="{session_conf_value}" placeholder="{session_conf_attr}">'
-            input_end = (
-                '</div>'
-            )
+            input_attribute = '<input name="{session_conf_attr}" \
+                              "type="text" value="{session_conf_value}" \
+                              "placeholder="{session_conf_attr}">'
+            input_end = "</div>"
+            session_options.append(input_entry)
             session_options.append(
-                input_entry
-            )
-            session_options.append(
-                label_attribute.format(
-                    session_conf_attr=session_conf_attr
-                )
+                label_attribute.format(session_conf_attr=session_conf_attr)
             )
             session_options.append(
                 input_attribute.format(
@@ -117,14 +101,17 @@ class MultipleSpawner(Spawner):
                     session_conf_value=getattr(session_conf, session_conf_attr),
                 )
             )
-            session_options.append(
-                input_end
-            )
+            session_options.append(input_end)
 
         # Resource type deployments
         # TODO, dynamically provide the deployment dropdown after the
         # selection of a resource type
         form = """
+            <label for="provider">Provider:</label>
+            <select class="form-control" name="provider" required>
+                {provider_options}
+            </select>
+
             <label for="resource_type">Resource Type:</label>
             <select class="form-control" name="resource_type" required>
                 {resource_type_options}
@@ -139,77 +126,122 @@ class MultipleSpawner(Spawner):
             {session_options}
             <br>
         """.format(
+            provider_options=provider_options,
             resource_type_options=resource_type_options,
-            resource_spec_options=''.join(resource_spec_options),
-            session_options=''.join(session_options),
+            resource_spec_options="".join(resource_spec_options),
+            session_options="".join(session_options),
         )
         return form
 
     async def options_from_form(self, formdata):
         """ """
-        options = {}
+        options = {"spawn_options": {}}
+
+        if "provider" in formdata:
+            options["spawn_options"]["provider"] = formdata["provider"][0]
+
         if "resource_type" in formdata:
-            options["resource_type"] = formdata["resource_type"][0]
+            options["spawn_options"]["resource_type"] = formdata["resource_type"][0]
 
         if "resource_spec" in formdata:
-            options["resource_spec"] = formdata["resource_spec"][0]
-
+            options["spawn_options"]["resource_spec"] = formdata["resource_spec"][0]
         return options
 
     def load_state(self, state):
-        super(MultipleSpawner, self).load_state(state)
-        self.set_notebook(id=state.get("notebook_id", ""))
+        super().load_state(state)
+        self.set_notebook(notebook=state.get("notebook", {}))
         return state
 
     def get_state(self):
-        state = super(MultipleSpawner, self).get_state()
-        notebook = yield self.get_notebook()
-        if notebook["id"]:
-            state["notebook_id"] = notebook["id"]
+        state = super().get_state()
+        notebook = self.get_notebook()
+        if notebook:
+            state["notebook"] = notebook
+            if "scheduler" in notebook:
+                state = state["notebook"]["state"] = notebook["scheduler"].call_process(
+                    "get_state"
+                )
+                self.set_notebook(state)
         return state
 
     def clear_state(self):
-        super(MultipleSpawner, self).clear_state()
+        super().clear_state()
         self.set_notebook(clear=True)
 
     async def start(self):
         # Assign to-be notebook -> so that poll finds it
         self.set_notebook(status="starting")
-        resource_type = None
-        resource_specification = None
-        spawner_template = find_spawner(resource_type)
-        # if not a required provider, find an appropriate one
-        provider = None
-        if "provider" in spawner_template:
-            provider = find_provider(resource_type)
+        spawn_options = self.user_options["spawn_options"]
 
-        spawner_configuration = configure_spawner(
-            spawner_template,
-            provider=provider,
-            resource_specification=resource_specification,
+        resource_type = spawn_options["resource_type"]
+        resource_specification = spawn_options["resource_spec"]
+        provider = spawn_options["provider"]
+
+        # Resource pools are externally defined and managed
+
+        orchestrator_pool = create_orchestrator_pool(provider, resource_type)
+        if not orchestrator_pool:
+            raise RuntimeError(
+                "Failed to find a orchestrator for provider: {}".format(provider)
+            )
+
+        resource = orchestrator_pool.find_resource(
+            resource_type, resource_specification
+        )
+        # The orchesrator will allocate a resource if
+        #  none of the specific type or spec is available
+        # Might take a long time, hence we ensure there is a adequate start_time
+        if not resource:
+            # Can take time
+            resource = orchestrator_pool.create_resource(
+                resource_type, resource_specification
+            )
+        if not resource:
+            raise RuntimeError(
+                "Failed to find a resource that match the specified configuration"
+            )
+
+        # Pass on the spawner options
+        # https://github.com/jupyterhub/wrapspawner/blob/master/wrapspawner/wrapspawner.py
+        spawner_options = dict(
+            user=self.user,
+            db=self.db,
+            hub=self.hub,
+            authenticator=self.authenticator,
+            oauth_client_id=self.oauth_client_id,
+            server=self._server,
+            config=self.config,
         )
 
-        # start_timeout (if orchestration -> set this, because the
-        #  server needs to be running)
-        # when the start function returns
-        ip, port = await schedule(
-            spawner_configuration, **spawner_configuration["kwargs"]
-        )
+        task_template = create_schedule_task_template(spawner_options)
+        if not task_template:
+            raise RuntimeError("Failed to configure the scheduler task template")
+
+        self.scheduler = Scheduler(task_template=task_template)
+        self.set_notebook(scheduler=self.scheduler)
+        ip, port = await self.scheduler.run()
 
         if not ip or not port:
             self.set_notebook(status="failed")
-            raise Exception("")
+            raise Exception("Faiiled to schedule the Notebook")
 
         # TODO, start depends on the spawner used
         self.set_notebook(ip=ip, port=port, status="started")
         return ip, port
 
     async def stop(self, now=False):
+        notebook = self.get_notebook()
+        if not notebook:
+            return None
         status = await self.poll()
         if status is not None:
             return
-        # TODO, stop depends on the specific spawner used
-        return None
+
+        if "scheduler" not in notebook:
+            return None
+
+        scheduler = notebook["scheduler"]
+        return scheduler.call_process("stop")
 
     async def poll(self):
         # Returns:
@@ -220,10 +252,11 @@ class MultipleSpawner(Spawner):
         if not notebook:
             return current_status
 
-        if notebook["status"] == "starting" or notebook["status"] == "started":
-            return None
+        if "scheduler" not in notebook:
+            return current_status
 
-        return current_status
+        scheduler = notebook["scheduler"]
+        return scheduler.call_process("poll")
 
     def get_notebook(self):
         return self.notebook
