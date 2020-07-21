@@ -1,4 +1,3 @@
-import enum
 
 
 class ResourceSpecification:
@@ -12,8 +11,8 @@ class ResourceSpecification:
         return ["memory", "cpus", "accelerators"]
 
 
-class ResourceTypes(enum.Enum):
+class ResourceTypes:
 
-    BARE_METAL = 1
-    VIRTUAL_MACHINE = 2
-    CONTAINER = 3
+    BARE_METAL = "bare_metal"
+    VIRTUAL_MACHINE = "virtual_machine"
+    CONTAINER = "container"

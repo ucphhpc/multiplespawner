@@ -1,7 +1,7 @@
 import os
 from jupyterhub.spawner import Spawner
 from traitlets import Dict, Unicode, default
-from multiplespawner.orchestration.orchestration import create_orchestrator_pool
+from multiplespawner.orchestration.orchestration import create_pool, load_pool
 from multiplespawner.runtime.resource import ResourceSpecification, ResourceTypes
 from multiplespawner.session import SessionConfiguration
 from multiplespawner.spawner.scheduler import Scheduler, create_schedule_task_template
@@ -178,24 +178,27 @@ class MultipleSpawner(Spawner):
         provider = spawn_options["provider"]
 
         # Resource pools are externally defined and managed
+        pool = load_pool(provider, resource_type)
+        if not pool:
+            pool = create_pool(provider, resource_type)
+            if not pool:
+                raise RuntimeError(
+                    "Failed to create a pool for provider: {} for resource type: {}".format(
+                        provider, resource_type
+                    )
+                )
 
-        orchestrator_pool = create_orchestrator_pool(provider, resource_type)
-        if not orchestrator_pool:
-            raise RuntimeError(
-                "Failed to find a orchestrator for provider: {}".format(provider)
-            )
+        resource = pool.find(resource_specification)
+        if not resource:
+            pool.create(resource_specification)
 
-        resource = orchestrator_pool.find_resource(
-            resource_type, resource_specification
-        )
+        resource = pool.get_resource(resource_type, resource_specification)
         # The orchesrator will allocate a resource if
         #  none of the specific type or spec is available
         # Might take a long time, hence we ensure there is a adequate start_time
         if not resource:
             # Can take time
-            resource = orchestrator_pool.create_resource(
-                resource_type, resource_specification
-            )
+            resource = pool.create_resource(resource_type, resource_specification)
         if not resource:
             raise RuntimeError(
                 "Failed to find a resource that match the specified configuration"
