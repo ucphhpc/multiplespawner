@@ -1,14 +1,20 @@
-
-
 class ResourceSpecification:
 
     memory = 1
-    cpus = 1
-    accelerators = []
+    cpu = 1
+    gpu = 0
 
     @staticmethod
     def attributes():
-        return ["memory", "cpus", "accelerators"]
+        return ["memory", "cpu", "gpu"]
+
+    @staticmethod
+    def display_attributes():
+        return {
+            "memory": "Amount of memory (GB)",
+            "cpu": "Number of CPU cores",
+            "gpu": "Number of GPUs",
+        }
 
 
 class ResourceTypes:
@@ -16,3 +22,16 @@ class ResourceTypes:
     BARE_METAL = "bare_metal"
     VIRTUAL_MACHINE = "virtual_machine"
     CONTAINER = "container"
+
+    @staticmethod
+    def get(resource_type):
+        if hasattr(ResourceTypes, resource_type):
+            return getattr(ResourceTypes, resource_type)
+
+    @staticmethod
+    def display_attributes():
+        return {
+            ResourceTypes.BARE_METAL: "Bare Metal Machine",
+            ResourceTypes.VIRTUAL_MACHINE: "Virtual Machine",
+            ResourceTypes.CONTAINER: "Container",
+        }

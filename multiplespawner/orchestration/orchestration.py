@@ -1,6 +1,4 @@
-import flatten_dict
 from multiplespawner.runtime.resource import ResourceTypes
-from corc.orchestrator import factory
 
 
 class Pool:
@@ -17,7 +15,9 @@ class Pool:
         raise NotImplementedError
 
     def get(self, identifer):
-        return self.members[identifer]
+        if identifer in self.members:
+            return self.members[identifer]
+        return None
 
     # def create_resource(self, providers=None, type=None, spec=None):
     #     # {oci, aws}
@@ -44,7 +44,7 @@ class Pool:
 
 class ContainerPool(Pool):
 
-    proviers = []
+    providers = []
 
     def __init__(self, providers):
         self.providers = providers
@@ -55,11 +55,24 @@ class ContainerPool(Pool):
     def find(self, *args, **kwargs):
         pass
 
-    def get(self, identifer):
-        pass
+
+class VMPool(Pool):
+    def create(self, orchestrator_klass, orchestrator_options, resource_config):
+        orchestrator = orchestrator_klass(orchestrator_options)
+        orchestrator.validate_options()
+        # Blocking call
+        orchestrator.setup(resource_config)
+        if orchestrator.is_ready():
+            identifier, resource = orchestrator.get_resource()
+            self.members[identifier] = resource
+            return identifier, resource
+        return None, None
 
 
-ResourcePools = {ResourceTypes.CONTAINER: ContainerPool}
+ResourcePools = {
+    ResourceTypes.CONTAINER: ContainerPool,
+    ResourceTypes.VIRTUAL_MACHINE: VMPool,
+}
 
 
 # TODO, resource pools should be put on persistent storage right after creation
@@ -69,19 +82,10 @@ ResourcePools = {ResourceTypes.CONTAINER: ContainerPool}
 
 
 def load_pool(provider, resource_type):
-    return {"resources": {"id": {}}}
+    pool = ResourcePools[resource_type](provider)
+    return pool
 
 
 def create_pool(providers, resource_type, **kwargs):
     pool = ResourcePools[resource_type](providers)
     return pool
-
-
-def create_orchestrator_pool(provider, resource_type, **options):
-    # provider == {aws, oci}
-    # resource_type == {Resource.Container, Resource.VM}
-    # options == kwargs
-
-    orchestrator = Orchestrator.factory(provider, resource_type, **options)
-    Orchestrator
-    return orchestrator
