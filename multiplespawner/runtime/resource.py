@@ -1,8 +1,8 @@
 class ResourceSpecification:
-
-    memory = 1
-    cpu = 1
-    gpu = 0
+    def __init__(self, memory=1, cpu=1, gpu=0):
+        self.memory = memory
+        self.cpu = cpu
+        self.gpu = gpu
 
     @staticmethod
     def attributes():

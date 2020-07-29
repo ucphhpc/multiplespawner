@@ -64,17 +64,15 @@ class MultipleSpawner(Spawner):
         resource_spec_attrs = ResourceSpecification.display_attributes()
 
         resource_spec_options = []
+        input_entry = '<div class="form-group" name="resource_specification">'
+        resource_spec_options.append(input_entry)
         for resource_attr, display_value in resource_spec_attrs.items():
-            input_entry = '<div class="form-group">'
             label_attribute = (
                 '<small class="form-text text-muted">{resource_description}:</small>'
             )
             input_attribute = '<input name="{resource_attr}" class="form-control" \
                               "type="text" value="{resource_value}" \
                               "placeholder="{resource_description}">'
-            input_end = "</div>"
-
-            resource_spec_options.append(input_entry)
             resource_spec_options.append(
                 label_attribute.format(resource_description=display_value)
             )
@@ -85,7 +83,8 @@ class MultipleSpawner(Spawner):
                     resource_value=getattr(resource_spec, resource_attr),
                 )
             )
-            resource_spec_options.append(input_end)
+        input_end = "</div>"
+        resource_spec_options.append(input_end)
 
         # Runtime configuration
         session_conf = SessionConfiguration()
@@ -93,7 +92,7 @@ class MultipleSpawner(Spawner):
 
         session_options = []
         for session_conf_attr, display_value in session_conf_attrs.items():
-            input_entry = '<div class="form-group">'
+            input_entry = '<div class="form-group" name="session_configuration">'
             label_attribute = '<small class="form-text text-muted">{session_conf_description}:</small>'
             input_attribute = '<input name="{session_conf_attr}" class="form-control" \
                               "type="text" value="{session_conf_value}" \
@@ -152,8 +151,20 @@ class MultipleSpawner(Spawner):
         if "resource_type" in formdata:
             options["spawn_options"]["resource_type"] = formdata["resource_type"][0]
 
-        if "resource_spec" in formdata:
-            options["spawn_options"]["resource_spec"] = formdata["resource_spec"][0]
+        options["spawn_options"]["resource_specification"] = {}
+        for attr in ResourceSpecification.attributes():
+            if attr in formdata:
+                options["spawn_options"]["resource_specification"][attr] = formdata[
+                    attr
+                ][0]
+
+        options["spawn_options"]["session_configuration"] = {}
+        for attr in SessionConfiguration.attributes():
+            if attr in formdata:
+                options["spawn_options"]["session_configuration"][attr] = formdata[
+                    attr
+                ][0]
+
         return options
 
     def load_state(self, state):
@@ -181,9 +192,15 @@ class MultipleSpawner(Spawner):
         # Assign to-be notebook -> so that poll finds it
         self.set_notebook(status="starting")
         spawn_options = self.user_options["spawn_options"]
-        resource_type = spawn_options["resource_type"]
-        resource_specification = ResourceSpecification(**spawn_options["resource_spec"])
+        print(spawn_options)
         provider = spawn_options["provider"]
+        resource_type = spawn_options["resource_type"]
+        resource_specification = ResourceSpecification(
+            **spawn_options["resource_specification"]
+        )
+        session_configuration = SessionConfiguration(
+            **spawn_options["session_configuration"]
+        )
 
         # Resource pools are externally defined and managed
         # Made persistent on local disk for now
@@ -200,13 +217,15 @@ class MultipleSpawner(Spawner):
             # Might take a long time, hence we ensure there is a adequate start_time
             # TODO, create correcly formatted provider table
             # Same applies to resource_type: VM -> INSTANCE
-            provider = provider.upper()
             orchestrator_klass, options = get_orchestrator(INSTANCE, provider)
             # memory, cpu, accelerators
+            profile = get_profile(provider)
+
             resource_config = orchestrator_klass.make_resource_config(
+                profile=profile,
                 cpu=resource_specification.cpu,
                 memory=resource_specification.memory,
-                gpu=resource_specification.gpu,
+                gpus=resource_specification.gpu,
             )
             # Assign notebook ID to the state of the spawner
             identifier, resource = session_pool.create(

@@ -1,7 +1,6 @@
 class SessionConfiguration:
-
-    # Number of minutes
-    lifetime = 120
+    def __init__(self, lifetime=120):
+        self.lifetime = lifetime
 
     @staticmethod
     def attributes():
