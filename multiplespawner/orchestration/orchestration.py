@@ -58,8 +58,8 @@ class ContainerPool(Pool):
 
 class VMPool(Pool):
     def create(self, orchestrator_klass, orchestrator_options, resource_config):
+        orchestrator_klass.validate_options(orchestrator_options)
         orchestrator = orchestrator_klass(orchestrator_options)
-        orchestrator.validate_options()
         # Blocking call
         orchestrator.setup(resource_config)
         if orchestrator.is_ready():
