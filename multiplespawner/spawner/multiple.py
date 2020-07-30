@@ -9,6 +9,7 @@ from multiplespawner.spawner.selection import get_available_providers
 
 from corc.providers.defaults import INSTANCE
 from corc.providers.types import get_orchestrator
+from corc.providers.config import get_provider_profile
 
 
 class MultipleSpawner(Spawner):
@@ -219,10 +220,9 @@ class MultipleSpawner(Spawner):
             # Same applies to resource_type: VM -> INSTANCE
             orchestrator_klass, options = get_orchestrator(INSTANCE, provider)
             # memory, cpu, accelerators
-            profile = get_profile(provider)
-
+            provider_profile = get_provider_profile(provider)
             resource_config = orchestrator_klass.make_resource_config(
-                profile=profile,
+                provider_profile=provider_profile,
                 cpu=resource_specification.cpu,
                 memory=resource_specification.memory,
                 gpus=resource_specification.gpu,
