@@ -5,9 +5,6 @@ class Pool:
 
     members = {}
 
-    def __init__(self, members):
-        self.members = members
-
     def create(self, *args, **kwargs):
         raise NotImplementedError
 
