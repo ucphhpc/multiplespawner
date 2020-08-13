@@ -13,7 +13,7 @@ def find_provider(target_resource):
 
 
 def get_available_providers():
-    # Load from the providers.json file
+    # TODO Load from the providers.json file
     providers = [
         {
             "name": "oci",
@@ -25,5 +25,6 @@ def get_available_providers():
             "display_name": "KU Cloud",
             "types": ["container", "virtual_machine"],
         },
+        {"name": "local", "display_name": "Local machine", "types": ["bare_metal"]},
     ]
     return providers

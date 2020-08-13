@@ -24,7 +24,7 @@ class Scheduler:
         if "kwargs" not in self.task_template:
             return None, None
         kwargs = self.task_template["kwargs"]
-        return self.process_handler.start(**kwargs)
+        return self.process_handler.submit(**kwargs)
 
     async def call_process(self, func_name, **kwargs):
         if not self.process_handler:
@@ -60,6 +60,13 @@ def create_schedule_task_template(options=None):
     if not options:
         options = {}
 
+    # Define class_name (of scheduler)
+
     task_template = {}
     task_template.update(options)
     return task_template
+
+
+# Spawner options for the different ResourceTypes
+
+SpawnerOptions = {}

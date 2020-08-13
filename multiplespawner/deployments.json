@@ -18,6 +18,11 @@
                 "name": "OCI Oracle Linux 7.8",
                 "image": "Oracle Linux 7.8"
             }
+        ],
+        "bare_metal": [
+            {
+                "name": "Local machine"
+            }
         ]
     }
 }

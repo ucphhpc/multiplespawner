@@ -54,6 +54,8 @@ class ContainerPool(Pool):
 
 
 class VMPool(Pool):
+
+    # identifier, (orchestrator, resource)
     def create(self, orchestrator_klass, orchestrator_options, resource_config):
         orchestrator_klass.validate_options(orchestrator_options)
         orchestrator = orchestrator_klass(orchestrator_options)
@@ -61,9 +63,20 @@ class VMPool(Pool):
         orchestrator.setup(resource_config)
         if orchestrator.is_ready():
             identifier, resource = orchestrator.get_resource()
-            self.members[identifier] = resource
+            self.members[identifier] = (orchestrator, resource)
             return identifier, resource
         return None, None
+
+    def endpoint(self, identifier):
+        if identifier in self.members:
+            orchestrator, resource = self.members[identifier]
+            orchestrator.poll()
+            if orchestrator.is_reachable():
+                return orchestrator.endpoint()
+        return None
+
+    # def configure(self, identifier):
+    #     if identifier in self.members:
 
 
 ResourcePools = {
@@ -79,7 +92,7 @@ ResourcePools = {
 
 
 def load_pool(provider, resource_type):
-    pool = ResourcePools[resource_type](provider)
+    pool = ResourcePools[resource_type]()
     return pool
 
 

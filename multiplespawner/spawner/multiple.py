@@ -1,6 +1,6 @@
 import os
 from jupyterhub.spawner import Spawner
-from traitlets import Dict, Unicode, default
+from traitlets import Dict, Unicode, default, Integer
 from multiplespawner.orchestration.orchestration import create_pool, load_pool
 from multiplespawner.runtime.resource import ResourceSpecification, ResourceTypes
 from multiplespawner.session import SessionConfiguration
@@ -25,6 +25,10 @@ class MultipleSpawner(Spawner):
     notebook = Dict(default_value={}, config=False)
 
     resource_id = Unicode()
+
+    resource_configuration_timeout = Integer(
+        default_value=30, allow_none=False, config=True
+    )
 
     # TODO, Dynamically load the config file and populate
     # the class properties when the options_form is being rendered
@@ -218,8 +222,9 @@ class MultipleSpawner(Spawner):
             # Might take a long time, hence we ensure there is a adequate start_time
             # TODO, create correcly formatted provider table
             # Same applies to resource_type: VM -> INSTANCE
-            orchestrator_klass, options = get_orchestrator(INSTANCE, provider)
-            # memory, cpu, accelerators
+
+            # Memory, CPU, Accelerators
+            orchestrator_klass, options = get_orchestrator(resource_type, provider)
             provider_profile = get_provider_profile(provider)
             resource_config = orchestrator_klass.make_resource_config(
                 provider_profile=provider_profile,
@@ -239,8 +244,29 @@ class MultipleSpawner(Spawner):
             raise RuntimeError(
                 "Failed to find a resource that match the specified configuration"
             )
-        # TODO, save state
 
+        # Give a while to
+        num_attempts = 0
+        endpoint = None
+        while num_attempts < self.resource_configuration_timeout or not endpoint:
+            endpoint = session_pool.endpoint(self.identifier)
+            num_attempts += 1
+
+        # TODO, Configure the resource with the required dependencies
+        # session_pool.configure(self.identifier)
+
+        # Get available spawner templates and deployments
+        spawner_template = get_spawner_template(provider, resource_type)
+        spawner_deployment_configuration = get_spawner_deployment(resource_type)
+
+        # kubernetes spawner -> nodelabels
+        # dockerspawner -> node labels
+        # SSH spawner
+        # Fargate spawner
+
+        # Each type of deployment has a range of available spawners
+
+        # Use spawner to schedule the notebook on the orchestrated resource
         # Pass on the spawner options
         # https://github.com/jupyterhub/wrapspawner/blob/master/wrapspawner/wrapspawner.py
         spawner_options = dict(
@@ -253,17 +279,19 @@ class MultipleSpawner(Spawner):
             config=self.config,
         )
 
-        task_template = create_schedule_task_template(spawner_options)
+        # Extract which scheduler to use for spawning the notebook
+        task_template = create_schedule_task_template(spawner_options,)
         if not task_template:
             raise RuntimeError("Failed to configure the scheduler task template")
 
+        # Scheduler, wrap spawner
         self.scheduler = Scheduler(task_template=task_template)
         self.set_notebook(scheduler=self.scheduler)
         ip, port = await self.scheduler.run()
 
         if not ip or not port:
             self.set_notebook(status="failed")
-            raise Exception("Faiiled to schedule the Notebook")
+            raise Exception("Failed to schedule the Notebook")
 
         # TODO, start depends on the spawner used
         self.set_notebook(ip=ip, port=port, status="started")
@@ -297,6 +325,8 @@ class MultipleSpawner(Spawner):
 
         scheduler = notebook["scheduler"]
         return scheduler.call_process("poll")
+
+    # TODO, add progress function
 
     def get_notebook(self):
         return self.notebook

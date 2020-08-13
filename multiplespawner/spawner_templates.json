@@ -15,5 +15,16 @@
         "class": "aws_ec2_spawner",
         "type": "virtual_machine",
         "provider": "aws"
+    },
+    {
+        "name": "SSH Instance Spawner",
+        "class": "ssh_spawner",
+        "type": "virtual_machine"
+    },
+    {
+        "name": "Local Process Spawner",
+        "class": "jupyterhub.spawner.SimpleLocalProcessSpawner",
+        "type": "bare_metal",
+        "provider": "local"
     }
 ]
