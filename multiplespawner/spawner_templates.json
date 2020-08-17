@@ -2,29 +2,31 @@
     {
         "name": "DockerSpawner",
         "class": "dockerspawner.DockerSpawner",
-        "type": "container"
+        "type": "container",
+        "providers": ["oci"]
     },
     {
         "name": "Aws Container Spawner",
         "class": "aws_fargate_spawner",
         "type": "container",
-        "provider": "aws"
+        "providers": ["aws"]
     },
     {
         "name": "Aws EC2 Instance",
         "class": "aws_ec2_spawner",
         "type": "virtual_machine",
-        "provider": "aws"
+        "providers": ["aws"]
     },
     {
-        "name": "SSH Instance Spawner",
+        "name": "VirtualMachine Spawner",
         "class": "ssh_spawner",
-        "type": "virtual_machine"
+        "type": "virtual_machine",
+        "providers": ["oci"]
     },
     {
         "name": "Local Process Spawner",
         "class": "jupyterhub.spawner.SimpleLocalProcessSpawner",
         "type": "bare_metal",
-        "provider": "local"
+        "providers": ["local"]
     }
 ]

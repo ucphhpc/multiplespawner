@@ -1,0 +1,26 @@
+{
+    "containers": [
+        {
+            "name": "Python Notebook",
+            "image": "nielsbohr/python-notebook",
+            "mounts": [
+                {
+                    "type": "bind",
+                    "source": "/home/jovyan/modi_mount",
+                    "target": "/home/jovyan/modi_mount"
+                }
+            ]
+        }
+    ],
+    "virtual_machines": [
+        {
+            "name": "OCI Oracle Linux 7.8",
+            "image": "Oracle Linux 7.8"
+        }
+    ],
+    "bare_metals": [
+        {
+            "name": "Local machine"
+        }
+    ]
+}

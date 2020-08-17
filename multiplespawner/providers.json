@@ -1,10 +1,17 @@
 [
     {
-        "name": "aws",
-        "types": ["container", "virtual_machine"]
+        "name": "oci",
+        "display_name": "Oracle Cloud",
+        "types": ["container", "virtual_machine"],
     },
     {
-        "name": "oci",
+        "name": "ku",
+        "display_name": "KU Cloud",
+        "types": ["container", "virtual_machine"],
+    },
+    {
+        "name": "local",
+        "display_name": "Local machine",
         "types": ["container", "virtual_machine"]
-    }
+    },
 ]

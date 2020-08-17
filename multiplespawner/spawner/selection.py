@@ -25,6 +25,10 @@ def get_available_providers():
             "display_name": "KU Cloud",
             "types": ["container", "virtual_machine"],
         },
-        {"name": "local", "display_name": "Local machine", "types": ["bare_metal"]},
+        {
+            "name": "local",
+            "display_name": "Local machine",
+            "types": ["container", "virtual_machine"],
+        },
     ]
     return providers

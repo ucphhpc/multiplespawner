@@ -6,6 +6,8 @@ from multiplespawner.runtime.resource import ResourceSpecification, ResourceType
 from multiplespawner.session import SessionConfiguration
 from multiplespawner.spawner.scheduler import Scheduler, create_schedule_task_template
 from multiplespawner.spawner.selection import get_available_providers
+from multiplespawner.spawner.template import get_spawner_template
+from multiplespawner.spawner.deployment import get_spawner_deployment
 
 from corc.providers.defaults import INSTANCE
 from corc.providers.types import get_orchestrator
@@ -147,7 +149,6 @@ class MultipleSpawner(Spawner):
         return form
 
     async def options_from_form(self, formdata):
-        """ """
         options = {"spawn_options": {}}
 
         if "provider" in formdata:
@@ -197,7 +198,6 @@ class MultipleSpawner(Spawner):
         # Assign to-be notebook -> so that poll finds it
         self.set_notebook(status="starting")
         spawn_options = self.user_options["spawn_options"]
-        print(spawn_options)
         provider = spawn_options["provider"]
         resource_type = spawn_options["resource_type"]
         resource_specification = ResourceSpecification(
