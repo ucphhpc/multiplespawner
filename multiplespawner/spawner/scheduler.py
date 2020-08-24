@@ -1,30 +1,41 @@
+from multiplespawner.helpers import import_klass
+
 class Scheduler:
 
     task_template = {}
 
     process_handler = None
-    process_options = {}
+    runner_config = {}
 
-    def __init__(self, process_options=None, task_template=None):
+    def __init__(self, runner_config=None, task_template=None):
+        
         if not task_template:
-            task_template = {}
-
+            self.task_template = {}
         self.task_template = task_template
-        if not process_options:
-            process_options = {}
-        self.process_options = process_options
 
-    async def run(self):
+        if not runner_config:
+            runner_config = {}
+        self.runner_config = runner_config
+
+    async def run(self, options=None):
+        if not options:
+            options = {}
+
         # Instantiate the class
-        if "class_name" not in self.task_template:
+        if "spawner" not in self.task_template:
             return None, None
-        class_name = self.task_template["class_name"]
-        self.process_handler = class_name(**self.process_options)
+        spawner = self.task_template["spawner"]
 
-        if "kwargs" not in self.task_template:
+        if "class" not in spawner:
             return None, None
-        kwargs = self.task_template["kwargs"]
-        return self.process_handler.submit(**kwargs)
+
+        klass_path = self.task_template["spawner"]["class"].split(".")
+        klass = import_klass(klass_path[:-1], klass_path[-1])
+        if not klass:
+            return None, None
+
+        self.process_handler = klass(**self.runner_config)
+        return self.process_handler.start(**options)
 
     async def call_process(self, func_name, **kwargs):
         if not self.process_handler:
@@ -56,17 +67,14 @@ class Scheduler:
 #     return ip, port
 
 
-def create_schedule_task_template(options=None):
-    if not options:
-        options = {}
+def create_schedule_task_template(task_template=None):
+    if not task_template:
+        task_template = {}
 
     # Define class_name (of scheduler)
-
     task_template = {}
-    task_template.update(options)
+    task_template.update(runner_config)
     return task_template
 
 
-# Spawner options for the different ResourceTypes
-
-SpawnerOptions = {}
+# Spawner runner_config for the different ResourceTypes

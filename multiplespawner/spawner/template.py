@@ -16,14 +16,16 @@ def get_spawner_template_path(path=None):
 
 def get_spawner_template(provider, resource_type, path=None):
     path = get_spawner_template_path(path)
-    config = load_config(path=path)
+    templates = load_config(path=path)
 
-    if not isinstance(config, dict):
+    if not isinstance(templates, list):
         return None
 
-    for template in config:
-        if provider in template:
-            if resource_type in template[provider]:
-                return template[provider][resource_type]
-
+    matching_template = None
+    for template in templates:
+        if (
+            template["resource_type"] == resource_type
+            and provider in template["providers"]
+        ):
+            return template
     return None

@@ -1,4 +1,5 @@
 import os
+import time
 from jupyterhub.spawner import Spawner
 from traitlets import Dict, Unicode, default, Integer
 from multiplespawner.orchestration.orchestration import create_pool, load_pool
@@ -9,7 +10,6 @@ from multiplespawner.spawner.selection import get_available_providers
 from multiplespawner.spawner.template import get_spawner_template
 from multiplespawner.spawner.deployment import get_spawner_deployment
 
-from corc.providers.defaults import INSTANCE
 from corc.providers.types import get_orchestrator
 from corc.providers.config import get_provider_profile
 
@@ -248,8 +248,9 @@ class MultipleSpawner(Spawner):
         # Give a while to
         num_attempts = 0
         endpoint = None
-        while num_attempts < self.resource_configuration_timeout or not endpoint:
-            endpoint = session_pool.endpoint(self.identifier)
+        while num_attempts < self.resource_configuration_timeout and not endpoint:
+            endpoint = session_pool.endpoint(self.resource_id)
+            time.sleep(1)
             num_attempts += 1
 
         # TODO, Configure the resource with the required dependencies
@@ -257,7 +258,9 @@ class MultipleSpawner(Spawner):
 
         # Get available spawner templates and deployments
         spawner_template = get_spawner_template(provider, resource_type)
-        spawner_deployment_configuration = get_spawner_deployment(resource_type)
+        spawner_deployment_configuration = get_spawner_deployment(
+            resource_type, name=""
+        )
 
         # kubernetes spawner -> nodelabels
         # dockerspawner -> node labels
@@ -278,6 +281,7 @@ class MultipleSpawner(Spawner):
             server=self._server,
             config=self.config,
         )
+        # Merge the client spawner configuration into spawner_options
 
         # Extract which scheduler to use for spawning the notebook
         task_template = create_schedule_task_template(spawner_options,)
@@ -285,7 +289,9 @@ class MultipleSpawner(Spawner):
             raise RuntimeError("Failed to configure the scheduler task template")
 
         # Scheduler, wrap spawner
-        self.scheduler = Scheduler(task_template=task_template)
+        self.scheduler = Scheduler(
+            runner_config=spawner_options, task_template=task_template
+        )
         self.set_notebook(scheduler=self.scheduler)
         ip, port = await self.scheduler.run()
 
