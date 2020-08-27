@@ -8,7 +8,7 @@ def get_config_path(path=None):
     else:
         # If no path is set programmatically
         if not path:
-            path = os.path.join(os.path.expanduser("~"), ".multiple_spawner", "config")
+            path = os.path.join(os.path.expanduser("~"), ".multiplespawner", "config")
     return path
 
 

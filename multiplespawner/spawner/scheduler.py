@@ -27,7 +27,7 @@ class Scheduler:
             spawner_config = spawner["config"]
 
         klass_path = self.task_template["spawner"]["class"].split(".")
-        klass = import_klass('.'.join(klass_path[:-1]), klass_path[-1])
+        klass = import_klass(".".join(klass_path[:-1]), klass_path[-1])
         if not klass:
             return None, None
 
@@ -42,14 +42,14 @@ class Scheduler:
                     klass_config[k] = v
 
         self.process_handler = klass(**klass_config)
-        return self.process_handler.start(**options)
+        return await self.process_handler.start()
 
-    async def call_process(self, func_name, **kwargs):
+    def call_process(self, func_name, **kwargs):
         if not self.process_handler:
             return None
 
         if hasattr(self.process_handler, func_name) and callable(
-            self.process_handler + ".{}".format(func_name)
+            getattr(self.process_handler, func_name)
         ):
             func = getattr(self.process_handler, func_name)
             if func:
@@ -58,9 +58,8 @@ class Scheduler:
 
 
 def create_notebook_task_template(
-    spawner_template,
-    spawner_template_config,
-    parent_spawner_config=None):
+    spawner_template, spawner_template_config, parent_spawner_config=None
+):
     spawner_config = {}
     if parent_spawner_config:
         parent_spawner_config.update(**spawner_template_config)
@@ -69,9 +68,6 @@ def create_notebook_task_template(
         spawner_config = spawner_template_config
 
     notebook_template = {
-        "spawner": {
-            "class": spawner_template["class"],
-            "config": spawner_config
-        }
+        "spawner": {"class": spawner_template["class"], "config": spawner_config}
     }
     return notebook_template

@@ -9,7 +9,7 @@ def get_spawner_template_path(path=None):
         # If no path is set programmatically
         if not path:
             path = os.path.join(
-                os.path.expanduser("~"), ".multiple_spawner", "spawner_templates.json"
+                os.path.expanduser("~"), ".multiplespawner", "spawner_templates.json"
             )
     return path
 

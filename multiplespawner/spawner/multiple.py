@@ -184,7 +184,7 @@ class MultipleSpawner(Spawner):
         if notebook:
             state["notebook"] = notebook
             if "scheduler" in notebook:
-                state = state["notebook"]["state"] = notebook["scheduler"].call_process(
+                state["notebook"]["state"] = notebook["scheduler"].call_process(
                     "get_state"
                 )
                 self.set_notebook(state)
@@ -194,7 +194,7 @@ class MultipleSpawner(Spawner):
         super().clear_state()
         self.set_notebook(clear=True)
 
-    async def start(self):
+    def start(self):
         # Assign to-be notebook -> so that poll finds it
         self.set_notebook(status="starting")
         spawn_options = self.user_options["spawn_options"]
@@ -259,8 +259,7 @@ class MultipleSpawner(Spawner):
         # Get available spawner templates and deployments
         spawner_template = get_spawner_template(provider, resource_type)
         spawner_deployment_configuration = get_spawner_deployment(
-            resource_type,
-            name="local_machine"
+            resource_type, name="local_machine"
         )
         # kubernetes spawner -> nodelabels
         # dockerspawner -> node labels
@@ -277,7 +276,7 @@ class MultipleSpawner(Spawner):
             authenticator=self.authenticator,
             oauth_client_id=self.oauth_client_id,
             server=self._server,
-            config=self.config
+            config=self.config,
         )
 
         # Each type of deployment has a range of available spawners
@@ -286,16 +285,23 @@ class MultipleSpawner(Spawner):
         notebook_task_template = create_notebook_task_template(
             spawner_template,
             spawner_deployment_configuration,
-            parent_spawner_config=parent_spawner_config
+            parent_spawner_config=parent_spawner_config,
         )
         if not notebook_task_template:
             raise RuntimeError("Failed to configure the scheduler task template")
 
         # Scheduler, Launch the notebook
-        self.scheduler = Scheduler(
-            task_template=notebook_task_template
-        )
+        self.scheduler = Scheduler(task_template=notebook_task_template)
         self.set_notebook(scheduler=self.scheduler)
+        # run = self.scheduler.run()
+        # # ip, port = yield from self.scheduler.run()
+
+        # if not ip or not port:
+        #     self.set_notebook(status="failed")
+        #     raise Exception("Failed to schedule the Notebook")
+
+        # TODO, start depends on the spawner used
+        # self.set_notebook(ip=ip, port=port, status="started")
         return self.scheduler.run()
 
     async def stop(self, now=False):
