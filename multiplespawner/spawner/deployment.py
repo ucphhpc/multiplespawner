@@ -21,11 +21,9 @@ def get_spawner_deployment(resource_type, name=None, path=None):
     if not isinstance(config, dict):
         return None
 
-    for deployment_type, deployment in config.items():
+    for deployment_type, deployments in config.items():
         if resource_type == deployment_type:
-            if name:
-                if name == deployment["name"]:
+            for deployment in deployments:
+                if "name" in deployment and name == deployment["name"]:
                     return deployment
-            else:
-                return deployment
     return None

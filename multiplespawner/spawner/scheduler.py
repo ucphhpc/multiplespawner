@@ -1,21 +1,14 @@
 from multiplespawner.helpers import import_klass
 
+
 class Scheduler:
-
     task_template = {}
-
     process_handler = None
-    runner_config = {}
 
-    def __init__(self, runner_config=None, task_template=None):
-        
+    def __init__(self, task_template=None):
         if not task_template:
             self.task_template = {}
         self.task_template = task_template
-
-        if not runner_config:
-            runner_config = {}
-        self.runner_config = runner_config
 
     async def run(self, options=None):
         if not options:
@@ -29,12 +22,26 @@ class Scheduler:
         if "class" not in spawner:
             return None, None
 
+        spawner_config = {}
+        if "config" in spawner:
+            spawner_config = spawner["config"]
+
         klass_path = self.task_template["spawner"]["class"].split(".")
-        klass = import_klass(klass_path[:-1], klass_path[-1])
+        klass = import_klass('.'.join(klass_path[:-1]), klass_path[-1])
         if not klass:
             return None, None
 
-        self.process_handler = klass(**self.runner_config)
+        klass_config = {}
+        for k, v in spawner_config.items():
+            if hasattr(klass, k):
+                # If a @property -> does it have a setter?
+                if isinstance(getattr(klass, k), property):
+                    if getattr(klass, k).fset is not None:
+                        klass_config[k] = v
+                else:
+                    klass_config[k] = v
+
+        self.process_handler = klass(**klass_config)
         return self.process_handler.start(**options)
 
     async def call_process(self, func_name, **kwargs):
@@ -50,31 +57,21 @@ class Scheduler:
         return None
 
 
-# async def schedule(configuration=None):
-#     if not configuration:
-#         configuration = {}
+def create_notebook_task_template(
+    spawner_template,
+    spawner_template_config,
+    parent_spawner_config=None):
+    spawner_config = {}
+    if parent_spawner_config:
+        parent_spawner_config.update(**spawner_template_config)
+        spawner_config = parent_spawner_config
+    else:
+        spawner_config = spawner_template_config
 
-#     # Instantiate the class
-#     if 'class_name' not in configuration:
-#         return None, None
-#     class_name = configuration["class_name"]
-
-#     if "kwargs" not in configuration:
-#         return None, None
-#     kwargs = configuration["kwargs"]
-
-#     ip, port = await class_name.start(**kwargs)
-#     return ip, port
-
-
-def create_schedule_task_template(task_template=None):
-    if not task_template:
-        task_template = {}
-
-    # Define class_name (of scheduler)
-    task_template = {}
-    task_template.update(runner_config)
-    return task_template
-
-
-# Spawner runner_config for the different ResourceTypes
+    notebook_template = {
+        "spawner": {
+            "class": spawner_template["class"],
+            "config": spawner_config
+        }
+    }
+    return notebook_template

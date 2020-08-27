@@ -1,5 +1,5 @@
 {
-    "containers": [
+    "container": [
         {
             "name": "Python Notebook",
             "image": "nielsbohr/python-notebook",
@@ -12,16 +12,17 @@
             ]
         }
     ],
-    "virtual_machine": {
-        "oci": {
-            "oracle_linux": {
-                "image": "Oracle Linux 7.8"
-            }
-        }
-    },
-    "bare_metals": [
+    "virtual_machine": [
         {
-            "name": "Local machine"
+            "name": "oracle_linux_7_8",
+            "provider": "oci",
+            "image": "Oracle Linux 7.8"
+        }
+    ],
+    "bare_metal": [
+        {
+            "name": "local_machine",
+            "provider": "local"
         }
     ]
 }

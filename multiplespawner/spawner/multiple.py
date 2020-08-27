@@ -5,7 +5,7 @@ from traitlets import Dict, Unicode, default, Integer
 from multiplespawner.orchestration.orchestration import create_pool, load_pool
 from multiplespawner.runtime.resource import ResourceSpecification, ResourceTypes
 from multiplespawner.session import SessionConfiguration
-from multiplespawner.spawner.scheduler import Scheduler, create_schedule_task_template
+from multiplespawner.spawner.scheduler import Scheduler, create_notebook_task_template
 from multiplespawner.spawner.selection import get_available_providers
 from multiplespawner.spawner.template import get_spawner_template
 from multiplespawner.spawner.deployment import get_spawner_deployment
@@ -259,49 +259,44 @@ class MultipleSpawner(Spawner):
         # Get available spawner templates and deployments
         spawner_template = get_spawner_template(provider, resource_type)
         spawner_deployment_configuration = get_spawner_deployment(
-            resource_type, name=""
+            resource_type,
+            name="local_machine"
         )
-
         # kubernetes spawner -> nodelabels
         # dockerspawner -> node labels
         # SSH spawner
         # Fargate spawner
 
-        # Each type of deployment has a range of available spawners
-
         # Use spawner to schedule the notebook on the orchestrated resource
         # Pass on the spawner options
         # https://github.com/jupyterhub/wrapspawner/blob/master/wrapspawner/wrapspawner.py
-        spawner_options = dict(
+        parent_spawner_config = dict(
             user=self.user,
             db=self.db,
             hub=self.hub,
             authenticator=self.authenticator,
             oauth_client_id=self.oauth_client_id,
             server=self._server,
-            config=self.config,
+            config=self.config
         )
-        # Merge the client spawner configuration into spawner_options
 
+        # Each type of deployment has a range of available spawners
+        # Merge the client spawner configuration into spawner_options
         # Extract which scheduler to use for spawning the notebook
-        task_template = create_schedule_task_template(spawner_options,)
-        if not task_template:
+        notebook_task_template = create_notebook_task_template(
+            spawner_template,
+            spawner_deployment_configuration,
+            parent_spawner_config=parent_spawner_config
+        )
+        if not notebook_task_template:
             raise RuntimeError("Failed to configure the scheduler task template")
 
-        # Scheduler, wrap spawner
+        # Scheduler, Launch the notebook
         self.scheduler = Scheduler(
-            runner_config=spawner_options, task_template=task_template
+            task_template=notebook_task_template
         )
         self.set_notebook(scheduler=self.scheduler)
-        ip, port = await self.scheduler.run()
-
-        if not ip or not port:
-            self.set_notebook(status="failed")
-            raise Exception("Failed to schedule the Notebook")
-
-        # TODO, start depends on the spawner used
-        self.set_notebook(ip=ip, port=port, status="started")
-        return ip, port
+        return self.scheduler.run()
 
     async def stop(self, now=False):
         notebook = self.get_notebook()
@@ -333,7 +328,6 @@ class MultipleSpawner(Spawner):
         return scheduler.call_process("poll")
 
     # TODO, add progress function
-
     def get_notebook(self):
         return self.notebook
 
