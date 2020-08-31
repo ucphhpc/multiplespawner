@@ -275,8 +275,15 @@ class MultipleSpawner(Spawner):
             hub=self.hub,
             authenticator=self.authenticator,
             oauth_client_id=self.oauth_client_id,
+            api_token=self.api_token,
+            cookie_options=self.cookie_options,
             server=self._server,
             config=self.config,
+            mem_limit=self.mem_limit,
+            mem_guarantee=self.mem_guarantee,
+            cpu_limit=self.cpu_limit,
+            cpu_gurantee=self.cpu_guarantee,
+            cert_paths=self.cert_paths,
         )
 
         # Each type of deployment has a range of available spawners
