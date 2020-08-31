@@ -300,15 +300,6 @@ class MultipleSpawner(Spawner):
         # Scheduler, Launch the notebook
         self.scheduler = Scheduler(task_template=notebook_task_template)
         self.set_notebook(scheduler=self.scheduler)
-        # run = self.scheduler.run()
-        # # ip, port = yield from self.scheduler.run()
-
-        # if not ip or not port:
-        #     self.set_notebook(status="failed")
-        #     raise Exception("Failed to schedule the Notebook")
-
-        # TODO, start depends on the spawner used
-        # self.set_notebook(ip=ip, port=port, status="started")
         return self.scheduler.run()
 
     async def stop(self, now=False):
