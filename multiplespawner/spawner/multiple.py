@@ -184,10 +184,9 @@ class MultipleSpawner(Spawner):
         if notebook:
             state["notebook"] = notebook
             if "scheduler" in notebook:
-                state["notebook"]["state"] = notebook["scheduler"].call_process(
-                    "get_state"
-                )
-                self.set_notebook(state)
+                scheduler = notebook["scheduler"]
+                child_state = scheduler.call_sync_process("get_state")
+                self.set_notebook(scheduler=scheduler, state=child_state)
         return state
 
     def clear_state(self):
@@ -196,7 +195,6 @@ class MultipleSpawner(Spawner):
 
     def start(self):
         # Assign to-be notebook -> so that poll finds it
-        self.set_notebook(status="starting")
         spawn_options = self.user_options["spawn_options"]
         provider = spawn_options["provider"]
         resource_type = spawn_options["resource_type"]
@@ -314,7 +312,7 @@ class MultipleSpawner(Spawner):
             return None
 
         scheduler = notebook["scheduler"]
-        return scheduler.call_process("stop")
+        return await scheduler.call_async_process("stop")
 
     async def poll(self):
         # Returns:
@@ -329,7 +327,7 @@ class MultipleSpawner(Spawner):
             return current_status
 
         scheduler = notebook["scheduler"]
-        return scheduler.call_process("poll")
+        return await scheduler.call_async_process("poll")
 
     # TODO, add progress function
     def get_notebook(self):

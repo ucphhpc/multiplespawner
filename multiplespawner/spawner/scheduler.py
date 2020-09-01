@@ -44,7 +44,7 @@ class Scheduler:
         self.process_handler = klass(**klass_config)
         return await self.process_handler.start()
 
-    def call_process(self, func_name, **kwargs):
+    def call_sync_process(self, func_name, **kwargs):
         if not self.process_handler:
             return None
 
@@ -54,6 +54,18 @@ class Scheduler:
             func = getattr(self.process_handler, func_name)
             if func:
                 return func(**kwargs)
+        return None
+
+    async def call_async_process(self, func_name, **kwargs):
+        if not self.process_handler:
+            return None
+
+        if hasattr(self.process_handler, func_name) and callable(
+            getattr(self.process_handler, func_name)
+        ):
+            func = getattr(self.process_handler, func_name)
+            if func:
+                return await func(**kwargs)
         return None
 
 
