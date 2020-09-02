@@ -1,3 +1,4 @@
+from multiplespawner.spawner.selection import Providers
 from multiplespawner.runtime.resource import ResourceTypes
 
 
@@ -37,20 +38,6 @@ class Pool:
 
     # def migrate_resource(self, from_provider, to_provider):
     #     pass
-
-
-class ContainerPool(Pool):
-
-    providers = []
-
-    def __init__(self, providers):
-        self.providers = providers
-
-    def create(self, specifiation):
-        pass
-
-    def find(self, *args, **kwargs):
-        pass
 
 
 class VMPool(Pool):
@@ -100,9 +87,9 @@ class OrchestratorPool(Pool):
 
 
 ResourcePools = {
-    ResourceTypes.BARE_METAL: OrchestratorPool,
-    ResourceTypes.CONTAINER: ContainerPool,
-    ResourceTypes.VIRTUAL_MACHINE: VMPool,
+    ResourceTypes.BARE_METAL: {Providers.LOCAL: OrchestratorPool,},
+    ResourceTypes.CONTAINER: {},
+    ResourceTypes.VIRTUAL_MACHINE: {Providers.OCI: VMPool},
 }
 
 # TODO, resource pools should be put on persistent storage right after creation
@@ -111,11 +98,21 @@ ResourcePools = {
 # Maybe introduce resourcepool into corc
 
 
-def load_pool(provider, resource_type):
-    pool = ResourcePools[resource_type]()
+def load_pool(resource_type, provider):
+    pool = None
+    if resource_type in ResourcePools:
+        pool_type = ResourcePools[resource_type]
+        if provider in pool_type:
+            pool = pool_type[provider]()
     return pool
 
 
 def create_pool(providers, resource_type, **kwargs):
     pool = ResourcePools[resource_type](providers)
     return pool
+
+
+def requires_orchestration(provider, resource_type):
+    if provider in ResourcePools and resource_type in ResourcePools[provider]:
+        return True
+    return False

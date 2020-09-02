@@ -1,15 +1,9 @@
 {
     "container": [
         {
-            "name": "Python Notebook",
+            "name": "python_notebook",
             "image": "nielsbohr/python-notebook",
-            "mounts": [
-                {
-                    "type": "bind",
-                    "source": "/home/jovyan/modi_mount",
-                    "target": "/home/jovyan/modi_mount"
-                }
-            ]
+            "container_port": 8888
         }
     ],
     "virtual_machine": [

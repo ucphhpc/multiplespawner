@@ -3,7 +3,7 @@
         "name": "DockerSpawner",
         "class": "dockerspawner.DockerSpawner",
         "resource_type": "container",
-        "providers": ["oci"]
+        "providers": ["oci", "local"]
     },
     {
         "name": "Aws Container Spawner",
@@ -19,7 +19,7 @@
     },
     {
         "name": "VirtualMachine Spawner",
-        "class": "ssh_spawner",
+        "class": "sshspawner.sshspawner.SSHSpawner",
         "resource_type": "virtual_machine",
         "providers": ["oci"]
     },
