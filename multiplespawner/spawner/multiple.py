@@ -1,7 +1,7 @@
 import os
 import time
 from jupyterhub.spawner import Spawner
-from traitlets import Dict, Unicode, default, Integer
+from traitlets import Dict, Unicode, default, Integer, directional_link, Instance
 from multiplespawner.orchestration.orchestration import (
     create_pool,
     load_pool,
@@ -35,6 +35,8 @@ class MultipleSpawner(Spawner):
     resource_configuration_timeout = Integer(
         default_value=30, allow_none=False, config=True
     )
+
+    scheduler = Instance(Scheduler, allow_none=True)
 
     # TODO, Dynamically load the config file and populate
     # the class properties when the options_form is being rendered
@@ -177,25 +179,86 @@ class MultipleSpawner(Spawner):
 
         return options
 
+
+    def create_scheduler(self):
+        # From https://github.com/jupyterhub/wrapspawner/blob/a8705e376dc9ecde3f2f99b44cd5b11c7ce1edd8/wrapspawner/wrapspawner.py#L86
+        if self.scheduler is None:
+            # Use spawner to schedule the notebook on the orchestrated resource
+            # Pass on the spawner options
+            # https://github.com/jupyterhub/wrapspawner/blob/master/wrapspawner/wrapspawner.py
+            parent_spawner_config = dict(
+                user=self.user,
+                db=self.db,
+                hub=self.hub,
+                authenticator=self.authenticator,
+                oauth_client_id=self.oauth_client_id,
+                server=self._server,
+                config=self.config,
+            )
+
+            # Each type of deployment has a range of available spawners
+            # Merge the client spawner configuration into spawner_options
+            # Extract which scheduler to use for spawning the notebook
+            notebook_task_template = create_notebook_task_template(
+                self.notebook["spawner_template"],
+                self.notebook["spawner_deployment"],
+                parent_spawner_config=parent_spawner_config,
+            )
+
+            # Scheduler, Launch the notebook
+            self.scheduler = Scheduler(task_template=notebook_task_template)
+            if not self.scheduler:
+                raise RuntimeError("Failed to create the Notebook Scheduler")
+
+            # Ensure that the state is reset since it will be this spawners state to begin with
+            self.scheduler.call_sync_process("clear_state")
+            if "state" in self.notebook:
+                # Refresh the spawners state
+                self.scheduler.call_sync_process("load_state", self.notebook["state"])
+
+            # link traits common between self and child
+            common_traits = (
+                set(self._trait_values.keys()) &
+                set(self.scheduler.process_handler._trait_values.keys()) -
+                set(notebook_task_template["spawner"]["config"].keys())
+            )
+            for trait in common_traits:
+                directional_link((self, trait), (self.scheduler.process_handler, trait))
+
+        return self.scheduler
+
+
     def load_state(self, state):
         super().load_state(state)
-        self.set_notebook(notebook=state.get("notebook", {}))
-        return state
+        # Load the notebook
+        self.notebook["state"] = state.get("state", {})
+        self.notebook["spawner_template"] = state.get("spawner_template", {})
+        self.notebook["spawner_deployment"] = state.get("spawner_deployment", {})
+        if self.notebook["spawner_template"] and self.notebook["spawner_deployment"]:
+            self.create_scheduler()
 
     def get_state(self):
         state = super().get_state()
-        notebook = self.get_notebook()
-        if notebook:
-            state["notebook"] = notebook
-            if "scheduler" in notebook:
-                scheduler = notebook["scheduler"]
-                child_state = scheduler.call_sync_process("get_state")
-                self.set_notebook(scheduler=scheduler, state=child_state)
+        if self.scheduler:
+            self.notebook["state"] = state["state"] = self.scheduler.call_sync_process("get_state")
+
+        if "spawner_template" in self.notebook:
+            state["spawner_template"] = self.notebook["spawner_template"]
+
+        if "spawner_deployment" in self.notebook:
+            state["spawner_deployment"] = self.notebook["spawner_deployment"]
         return state
 
     def clear_state(self):
         super().clear_state()
-        self.set_notebook(clear=True)
+        if self.scheduler:
+            self.scheduler.call_sync_process("clear_state")
+
+        if self.notebook:
+            self.notebook = {}
+
+        self.scheduler = None
+        self.notebook = {}
 
     def start(self):
         # Assign to-be notebook -> so that poll finds it
@@ -267,48 +330,24 @@ class MultipleSpawner(Spawner):
 
         # Get available spawner templates and deployments
         spawner_template = get_spawner_template(provider, resource_type)
-        spawner_deployment_configuration = get_spawner_deployment(
+        if not spawner_template:
+            raise RuntimeError("Failed to find an appropriate spawner template")
+        self.notebook["spawner_template"] = spawner_template
+
+        spawner_deployment = get_spawner_deployment(
             resource_type, name="python_notebook"
         )
+        if not spawner_deployment:
+            raise RuntimeError("Failed to find an appropriate spawner deployment")
+        self.notebook["spawner_deployment"] = spawner_deployment
+
         # kubernetes spawner -> nodelabels
         # dockerspawner -> node labels
         # SSH spawner
         # Fargate spawner
 
-        # Use spawner to schedule the notebook on the orchestrated resource
-        # Pass on the spawner options
-        # https://github.com/jupyterhub/wrapspawner/blob/master/wrapspawner/wrapspawner.py
-        parent_spawner_config = dict(
-            user=self.user,
-            db=self.db,
-            hub=self.hub,
-            authenticator=self.authenticator,
-            oauth_client_id=self.oauth_client_id,
-            api_token=self.api_token,
-            cookie_options=self.cookie_options,
-            server=self._server,
-            config=self.config,
-            mem_limit=self.mem_limit,
-            mem_guarantee=self.mem_guarantee,
-            cpu_limit=self.cpu_limit,
-            cpu_gurantee=self.cpu_guarantee,
-            cert_paths=self.cert_paths,
-        )
-
-        # Each type of deployment has a range of available spawners
-        # Merge the client spawner configuration into spawner_options
-        # Extract which scheduler to use for spawning the notebook
-        notebook_task_template = create_notebook_task_template(
-            spawner_template,
-            spawner_deployment_configuration,
-            parent_spawner_config=parent_spawner_config,
-        )
-        if not notebook_task_template:
-            raise RuntimeError("Failed to configure the scheduler task template")
-
-        # Scheduler, Launch the notebook
-        self.scheduler = Scheduler(task_template=notebook_task_template)
-        self.set_notebook(scheduler=self.scheduler)
+        if not self.scheduler:
+            self.create_scheduler()
         return self.scheduler.run()
 
     async def stop(self, now=False):
@@ -319,11 +358,9 @@ class MultipleSpawner(Spawner):
         if status is not None:
             return
 
-        if "scheduler" not in notebook:
+        if not self.scheduler:
             return None
-
-        scheduler = notebook["scheduler"]
-        return await scheduler.call_async_process("stop")
+        return await self.scheduler.call_async_process("stop")
 
     async def poll(self):
         # Returns:
@@ -334,18 +371,10 @@ class MultipleSpawner(Spawner):
         if not notebook:
             return current_status
 
-        if "scheduler" not in notebook:
+        if not self.scheduler:
             return current_status
-
-        scheduler = notebook["scheduler"]
-        return await scheduler.call_async_process("poll")
+        return await self.scheduler.call_async_process("poll")
 
     # TODO, add progress function
     def get_notebook(self):
         return self.notebook
-
-    def set_notebook(self, clear=False, **kwargs):
-        if clear:
-            self.notebook.clear()
-        else:
-            self.notebook.update(**kwargs)

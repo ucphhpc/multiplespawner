@@ -9,11 +9,7 @@ class Scheduler:
         if not task_template:
             self.task_template = {}
         self.task_template = task_template
-
-    async def run(self, options=None):
-        if not options:
-            options = {}
-
+            
         # Instantiate the class
         if "spawner" not in self.task_template:
             return None, None
@@ -42,9 +38,14 @@ class Scheduler:
                     klass_config[k] = v
 
         self.process_handler = klass(**klass_config)
+
+    async def run(self, options=None):
+        if not options:
+            options = {}
+
         return await self.process_handler.start()
 
-    def call_sync_process(self, func_name, **kwargs):
+    def call_sync_process(self, func_name, *args, **kwargs):
         if not self.process_handler:
             return None
 
@@ -53,10 +54,10 @@ class Scheduler:
         ):
             func = getattr(self.process_handler, func_name)
             if func:
-                return func(**kwargs)
+                return func(*args, **kwargs)
         return None
 
-    async def call_async_process(self, func_name, **kwargs):
+    async def call_async_process(self, func_name, *args, **kwargs):
         if not self.process_handler:
             return None
 
@@ -65,7 +66,7 @@ class Scheduler:
         ):
             func = getattr(self.process_handler, func_name)
             if func:
-                return await func(**kwargs)
+                return await func(*args, **kwargs)
         return None
 
 

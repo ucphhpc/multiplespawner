@@ -2,8 +2,7 @@
     "container": [
         {
             "name": "python_notebook",
-            "image": "nielsbohr/python-notebook",
-            "container_port": 8888
+            "image": "nielsbohr/python-notebook"
         }
     ],
     "virtual_machine": [
