@@ -18,17 +18,21 @@ class Scheduler:
         if "class" not in spawner:
             return None, None
 
-        spawner_config = {}
-        if "config" in spawner:
-            spawner_config = spawner["config"]
-
         klass_path = self.task_template["spawner"]["class"].split(".")
         klass = import_klass(".".join(klass_path[:-1]), klass_path[-1])
         if not klass:
             return None, None
 
+        spawner_kwargs = {}
+        if "kwargs" in spawner:
+            spawner_kwargs = spawner["kwargs"]
+
         klass_config = {}
-        for k, v in spawner_config.items():
+        for k, v in spawner_kwargs.items():
+            if v == "True":
+                v = True
+            if v == "False":
+                v = False
             if hasattr(klass, k):
                 # If a @property -> does it have a setter?
                 if isinstance(getattr(klass, k), property):
@@ -85,11 +89,13 @@ def create_notebook_task_template(
     if "class" in spawner_template:
         notebook_task_template["spawner"]["class"] = spawner_template["class"]
 
+    if parent_spawner_config:
+        notebook_task_template["spawner"]["kwargs"].update(parent_spawner_config)
+
     if "kwargs" in spawner_template:
         notebook_task_template["spawner"]["kwargs"].update(spawner_template["kwargs"])
 
-    if "kwargs" in spawner_template_config:
-        notebook_task_template["spawner"]["kwargs"].update(
-            spawner_template_config["kwargs"]
-        )
+    if spawner_template_config:
+        notebook_task_template["spawner"]["kwargs"].update(spawner_template_config)
+
     return notebook_task_template

@@ -1,10 +1,30 @@
 [
     {
+        "name": "SwarmSpawner",
+        "class": "jhub.SwarmSpawner",
+        "kwargs": {
+            "jupyterhub_service_name": "jupyterhub",
+            "networks": ["jupyterhub_default"],
+            "container_spec": {
+                "command": "start-notebook.sh",
+                "args": ["--NotebookApp.default_url=/lab"]
+            },
+            "dockerimages": [
+                {
+                    "image": "nielsbohr/python-notebook",
+                    "name": "Python Notebook"
+                }
+            ]
+        },
+        "resource_type": "container",
+        "providers": ["local"]
+    },
+    {
         "name": "DockerSpawner",
         "class": "dockerspawner.DockerSpawner",
         "kwargs": {"remove": "True"},
         "resource_type": "container",
-        "providers": ["oci", "local"]
+        "providers": ["oci"]
     },
     {
         "name": "Aws Container Spawner",

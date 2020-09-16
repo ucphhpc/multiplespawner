@@ -87,7 +87,9 @@ class OrchestratorPool(Pool):
 
 
 ResourcePools = {
-    ResourceTypes.BARE_METAL: {Providers.LOCAL: OrchestratorPool,},
+    ResourceTypes.BARE_METAL: {
+        Providers.LOCAL: OrchestratorPool,
+    },
     ResourceTypes.CONTAINER: {},
     ResourceTypes.VIRTUAL_MACHINE: {Providers.OCI: VMPool},
 }
