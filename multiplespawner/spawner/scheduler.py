@@ -9,7 +9,7 @@ class Scheduler:
         if not task_template:
             self.task_template = {}
         self.task_template = task_template
-            
+
         # Instantiate the class
         if "spawner" not in self.task_template:
             return None, None
@@ -38,6 +38,8 @@ class Scheduler:
                     klass_config[k] = v
 
         self.process_handler = klass(**klass_config)
+        if "server" in klass_config:
+            self.process_handler.server = klass_config["server"]
 
     async def run(self, options=None):
         if not options:
@@ -73,14 +75,21 @@ class Scheduler:
 def create_notebook_task_template(
     spawner_template, spawner_template_config, parent_spawner_config=None
 ):
-    spawner_config = {}
-    if parent_spawner_config:
-        parent_spawner_config.update(**spawner_template_config)
-        spawner_config = parent_spawner_config
-    else:
-        spawner_config = spawner_template_config
-
-    notebook_template = {
-        "spawner": {"class": spawner_template["class"], "config": spawner_config}
+    notebook_task_template = {
+        "spawner": {
+            "class": "jupyterhub.spawner.SimpleLocalProcessSpawner",
+            "kwargs": {},
+        }
     }
-    return notebook_template
+
+    if "class" in spawner_template:
+        notebook_task_template["spawner"]["class"] = spawner_template["class"]
+
+    if "kwargs" in spawner_template:
+        notebook_task_template["spawner"]["kwargs"].update(spawner_template["kwargs"])
+
+    if "kwargs" in spawner_template_config:
+        notebook_task_template["spawner"]["kwargs"].update(
+            spawner_template_config["kwargs"]
+        )
+    return notebook_task_template

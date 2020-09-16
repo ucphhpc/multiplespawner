@@ -3,8 +3,10 @@ from jupyter_client.localinterfaces import public_ips
 
 c = get_config()
 
-c.JupyterHub.ip = '0.0.0.0'
+c.JupyterHub.ip = "0.0.0.0"
 c.JupyterHub.port = 8000
+
+c.JupyterHub.debug_proxy = True
 
 c.JupyterHub.spawner_class = "multiplespawner.MultipleSpawner"
 # c.JupyterHub.spawner_class = 'dockerspawner.DockerSpawner'

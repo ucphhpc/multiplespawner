@@ -1,7 +1,7 @@
 import os
 import time
 from jupyterhub.spawner import Spawner
-from traitlets import Dict, Unicode, default, Integer, directional_link, Instance
+from traitlets import Dict, Unicode, default, Integer, directional_link, Instance, Bool
 from multiplespawner.orchestration.orchestration import (
     create_pool,
     load_pool,
@@ -179,7 +179,6 @@ class MultipleSpawner(Spawner):
 
         return options
 
-
     def create_scheduler(self):
         # From https://github.com/jupyterhub/wrapspawner/blob/a8705e376dc9ecde3f2f99b44cd5b11c7ce1edd8/wrapspawner/wrapspawner.py#L86
         if self.scheduler is None:
@@ -217,16 +216,15 @@ class MultipleSpawner(Spawner):
                 self.scheduler.call_sync_process("load_state", self.notebook["state"])
 
             # link traits common between self and child
+            config_keys = set(self.notebook["spawner_deployment"].keys())
             common_traits = (
-                set(self._trait_values.keys()) &
-                set(self.scheduler.process_handler._trait_values.keys()) -
-                set(notebook_task_template["spawner"]["config"].keys())
+                set(self._trait_values.keys())
+                & set(self.scheduler.process_handler._trait_values.keys()) - config_keys
             )
             for trait in common_traits:
                 directional_link((self, trait), (self.scheduler.process_handler, trait))
 
         return self.scheduler
-
 
     def load_state(self, state):
         super().load_state(state)
@@ -240,7 +238,9 @@ class MultipleSpawner(Spawner):
     def get_state(self):
         state = super().get_state()
         if self.scheduler:
-            self.notebook["state"] = state["state"] = self.scheduler.call_sync_process("get_state")
+            self.notebook["state"] = state["state"] = self.scheduler.call_sync_process(
+                "get_state"
+            )
 
         if "spawner_template" in self.notebook:
             state["spawner_template"] = self.notebook["spawner_template"]
@@ -340,7 +340,6 @@ class MultipleSpawner(Spawner):
         if not spawner_deployment:
             raise RuntimeError("Failed to find an appropriate spawner deployment")
         self.notebook["spawner_deployment"] = spawner_deployment
-
         # kubernetes spawner -> nodelabels
         # dockerspawner -> node labels
         # SSH spawner

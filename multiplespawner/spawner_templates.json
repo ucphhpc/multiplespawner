@@ -2,6 +2,7 @@
     {
         "name": "DockerSpawner",
         "class": "dockerspawner.DockerSpawner",
+        "kwargs": {"remove": "True"},
         "resource_type": "container",
         "providers": ["oci", "local"]
     },
