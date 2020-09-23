@@ -40,37 +40,20 @@ class Pool:
     #     pass
 
 
-class VMPool(Pool):
+class CorcPool(Pool):
 
     # identifier, (orchestrator, resource)
-    def create(self, orchestrator_klass, orchestrator_options, resource_config):
+    def create(
+        self,
+        orchestrator_klass,
+        orchestrator_options,
+        resource_config=None,
+        credentials=None,
+    ):
         orchestrator_klass.validate_options(orchestrator_options)
         orchestrator = orchestrator_klass(orchestrator_options)
         # Blocking call
-        orchestrator.setup(resource_config)
-        if orchestrator.is_ready():
-            identifier, resource = orchestrator.get_resource()
-            self.members[identifier] = (orchestrator, resource)
-            return identifier, resource
-        return None, None
-
-    def endpoint(self, identifier):
-        if identifier in self.members:
-            orchestrator, resource = self.members[identifier]
-            orchestrator.poll()
-            if orchestrator.is_reachable():
-                return orchestrator.endpoint()
-        return None
-
-
-class OrchestratorPool(Pool):
-
-    # identifier, (orchestrator, resource)
-    def create(self, orchestrator_klass, orchestrator_options, resource_config):
-        orchestrator_klass.validate_options(orchestrator_options)
-        orchestrator = orchestrator_klass(orchestrator_options)
-        # Blocking call
-        orchestrator.setup(resource_config)
+        orchestrator.setup(resource_config=resource_config, credentials=credentials)
         if orchestrator.is_ready():
             identifier, resource = orchestrator.get_resource()
             self.members[identifier] = (orchestrator, resource)
@@ -87,11 +70,9 @@ class OrchestratorPool(Pool):
 
 
 ResourcePools = {
-    ResourceTypes.BARE_METAL: {
-        Providers.LOCAL: OrchestratorPool,
-    },
+    ResourceTypes.BARE_METAL: {Providers.LOCAL: CorcPool,},
     ResourceTypes.CONTAINER: {},
-    ResourceTypes.VIRTUAL_MACHINE: {Providers.OCI: VMPool},
+    ResourceTypes.VIRTUAL_MACHINE: {Providers.OCI: CorcPool},
 }
 
 # TODO, resource pools should be put on persistent storage right after creation

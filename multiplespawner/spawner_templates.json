@@ -42,6 +42,26 @@
         "name": "VirtualMachine Spawner",
         "class": "sshspawner.sshspawner.SSHSpawner",
         "resource_type": "virtual_machine",
+        "configurer": {
+            "class": "corc.configurer.AnsibleConfigurer",
+            "options": {
+                "host_variables": {
+                    "ansible_connection": "ssh",
+                    "ansible_user": "opc",
+                    "ansible_become": "yes",
+                    "ansible_host_key_checking": "False",
+                    "verbosity": "verbosity"
+                },
+                "host_settings": {
+                    "group": "compute",
+                    "port": "22"
+                },
+                "apply_kwargs": {
+                    "playbook_path": ""
+                }
+            }
+        },
+        "authenticator": "corc.authenticator.SSHAuthenticator",
         "providers": ["oci"]
     },
     {
