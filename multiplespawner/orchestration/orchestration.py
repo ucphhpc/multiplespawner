@@ -81,7 +81,7 @@ ResourcePools = {
 # Maybe introduce resourcepool into corc
 
 
-def load_pool(resource_type, provider):
+def load_pool(provider, resource_type):
     pool = None
     if resource_type in ResourcePools:
         pool_type = ResourcePools[resource_type]
@@ -95,7 +95,7 @@ def create_pool(providers, resource_type, **kwargs):
     return pool
 
 
-def requires_orchestration(provider, resource_type):
-    if provider in ResourcePools and resource_type in ResourcePools[provider]:
+def supported_resource(provider, resource_type):
+    if resource_type in ResourcePools and provider in ResourcePools[resource_type]:
         return True
     return False
