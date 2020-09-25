@@ -2,10 +2,11 @@ import os
 import time
 from jupyterhub.spawner import Spawner
 from traitlets import Dict, Unicode, default, Integer, directional_link, Instance, Bool
+from multiplespawner.helpers import make
 from multiplespawner.orchestration.orchestration import (
     create_pool,
     load_pool,
-    requires_orchestration,
+    supported_resource,
 )
 from multiplespawner.runtime.resource import ResourceSpecification, ResourceTypes
 from multiplespawner.session import SessionConfiguration
@@ -36,7 +37,9 @@ class MultipleSpawner(Spawner):
 
     resource_start_timeout = Integer(default_value=30, allow_none=False, config=True)
 
-    resource_authenticator = Instance(allow_none=True)
+    resource_authenticator = None
+
+    resource_is_configured = Bool(default_value=False)
 
     scheduler = Instance(Scheduler, allow_none=True)
 
@@ -181,10 +184,13 @@ class MultipleSpawner(Spawner):
 
         return options
 
-    def run_configurer(self, credentials=None):
-        configurer, options = get_configurer(spawner_template)
-        configuration = configurer.get_configuration(options)
+    def run_configurer(self, endpoint, spawner_template, credentials=None):
+        configurer = make(spawner_template["configurer"]["class"])
+        configuration = configurer.gen_configuration(
+            spawner_template["configurer"]["options"]
+        )
         configurer.apply(endpoint, configuration=configuration, credentials=credentials)
+        self.resource_is_configured = True
 
     def create_scheduler(self):
         # From https://github.com/jupyterhub/wrapspawner/blob/a8705e376dc9ecde3f2f99b44cd5b11c7ce1edd8/wrapspawner/wrapspawner.py#L86
@@ -286,91 +292,97 @@ class MultipleSpawner(Spawner):
         self.notebook["spawner_template"] = spawner_template
 
         spawner_deployment = get_spawner_deployment(
-            resource_type, name="python_notebook"
+            resource_type, name="oracle_linux_7_8"
         )
         if not spawner_deployment:
             raise RuntimeError("Failed to find an appropriate spawner deployment")
         self.notebook["spawner_deployment"] = spawner_deployment
 
+        # Authenticator for accesing the resource that hosts the notebook
+        credentials = None
+        if not self.resource_authenticator:
+            if "authenticator" in self.notebook["spawner_template"]:
+                self.resource_authenticator = make(
+                    self.notebook["spawner_template"]["authenticator"]
+                )
+        if self.resource_authenticator:
+            credentials = getattr(self.resource_authenticator, "credentials", None)
+
+        if not supported_resource(provider, resource_type):
+            raise RuntimeError(
+                "The selected resource option is not supported - provider: {}, type: {}".format(
+                    provider, resource_type
+                )
+            )
+
+        # Resource pools are externally defined and managed
+        # Made persistent on local disk for now
+        session_pool = load_pool(provider, resource_type)
+        if not session_pool:
+            session_pool = create_pool(provider, resource_type)
+            if not session_pool:
+                raise RuntimeError(
+                    "Failed to create a pool for provider: {} "
+                    "for resource type: {}".format(provider, resource_type)
+                )
+
         # If resource_id and resource are set, load the ip/port from the session_pool
         # and return it straight away
+        if not self.resource_id:
+            # Might take a long time, hence we ensure there is a adequate start_time
+            # TODO, create correcly formatted provider table
+            # Same applies to resource_type: VM -> INSTANCE
 
-        if requires_orchestration(provider, resource_type):
-            # Resource pools are externally defined and managed
-            # Made persistent on local disk for now
-            session_pool = load_pool(provider, resource_type)
-            if not session_pool:
-                session_pool = create_pool(provider, resource_type)
-                if not session_pool:
-                    raise RuntimeError(
-                        "Failed to create a pool for provider: {} "
-                        "for resource type: {}".format(provider, resource_type)
-                    )
+            # Memory, CPU, Accelerators
+            orchestrator_klass, options = get_orchestrator(resource_type, provider)
+            provider_profile = get_provider_profile(provider)
+            resource_config = orchestrator_klass.make_resource_config(
+                provider_profile=provider_profile,
+                cpu=resource_specification.cpu,
+                memory=resource_specification.memory,
+                gpus=resource_specification.gpu,
+            )
 
-            if not self.resource_id or not self.resource:
-                # Might take a long time, hence we ensure there is a adequate start_time
-                # TODO, create correcly formatted provider table
-                # Same applies to resource_type: VM -> INSTANCE
+            # Determine whether the resource needs to be orchestrated beforehand
+            # Or whether the spawner will take care of it
+            # Assign notebook ID to the state of the spawner
+            identifier, resource = session_pool.create(
+                orchestrator_klass,
+                options,
+                resource_config=resource_config,
+                credentials=credentials,
+            )
+            self.resource_id, self.resource = identifier, resource
 
-                # Authenticate against the orchestrated resource
-                credentials = None
-                if not self.resource_authenticator:
-                    if "authenticator" in self.notebook["spawner_template"]:
-                        self.resource_authenticator = make(
-                            self.notebook["spawner_template"]["authenticator"]["klass"]
-                        )
-                if self.resource_authenticator:
-                    credentials = getattr(
-                        self.resource_authenticator, "credentials", None
-                    )
+        if not self.resource and self.resource_id:
+            self.resource = session_pool.get(self.resource_id)
 
-                # Memory, CPU, Accelerators
-                orchestrator_klass, options = get_orchestrator(resource_type, provider)
-                provider_profile = get_provider_profile(provider)
-                resource_config = orchestrator_klass.make_resource_config(
-                    provider_profile=provider_profile,
-                    cpu=resource_specification.cpu,
-                    memory=resource_specification.memory,
-                    gpus=resource_specification.gpu,
-                )
+        if not self.resource:
+            raise RuntimeError(
+                "Failed to find a resource that match the specified configuration"
+            )
 
-                # Determine whether the resource needs to be orchestrated beforehand
-                # Or whether the spawner will take care of it
-                # Assign notebook ID to the state of the spawner
-                identifier, resource = session_pool.create(
-                    orchestrator_klass,
-                    options,
-                    resource_config=resource_config,
-                    credentials=credentials,
-                )
-                self.resource_id, self.resource = identifier, resource
-            else:
-                self.resource = session_pool.get(self.resource_id)
+        # Give a while for the resource to be ready to return the endpoint
+        num_attempts = 0
+        endpoint = None
+        while num_attempts < self.resource_start_timeout and not endpoint:
+            endpoint = session_pool.endpoint(self.resource_id)
+            time.sleep(1)
+            num_attempts += 1
 
-            if not self.resource:
-                raise RuntimeError(
-                    "Failed to find a resource that match the specified configuration"
-                )
+        # Configure the orchestratrated resource
+        if endpoint and not self.resource_is_configured:
+            self.run_configurer(
+                endpoint, self.notebook["spawner_template"], credentials=credentials
+            )
 
-            # Give a while to
-            num_attempts = 0
-            endpoint = None
-            while num_attempts < self.resource_start_timeout and not endpoint:
-                endpoint = session_pool.endpoint(self.resource_id)
-                time.sleep(1)
-                num_attempts += 1
-
-            # TODO, Configure the resource with the required dependencies
-            # session_pool.configure(self.identifier)
+        # TODO, Configure the resource with the required dependencies
+        # session_pool.configure(self.identifier)
 
         # kubernetes spawner -> nodelabels
         # dockerspawner -> node labels
         # SSH spawner
         # Fargate spawner
-
-        # Configure the orchestratrated resource
-        if not self.configured:
-            self.run_configurer()
 
         if not self.scheduler:
             self.create_scheduler()
