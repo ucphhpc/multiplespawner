@@ -1,3 +1,4 @@
+import copy
 from multiplespawner.helpers import import_klass
 
 
@@ -74,6 +75,13 @@ class Scheduler:
             if func:
                 return await func(*args, **kwargs)
         return None
+
+
+def format_task_template(task_template, **kwargs):
+    for key, value in kwargs.items():
+        if key in task_template:
+            task_template[key].format(value)
+    return task_template
 
 
 def create_notebook_task_template(

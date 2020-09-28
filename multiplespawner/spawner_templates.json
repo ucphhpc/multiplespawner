@@ -41,6 +41,10 @@
     {
         "name": "VirtualMachine Spawner",
         "class": "sshspawner.sshspawner.SSHSpawner",
+        "kwargs": {
+            "remote_hosts": "{endpoint}",
+            "remote_port": "22"
+        },
         "resource_type": "virtual_machine",
         "configurer": {
             "class": "corc.configurer.AnsibleConfigurer",
@@ -59,7 +63,9 @@
                 }
             }
         },
-        "authenticator": "corc.authenticator.SSHAuthenticator",
+        "authenticator": {
+            "class": "corc.authenticator.SSHAuthenticator"
+        },
         "providers": ["oci"]
     },
     {
