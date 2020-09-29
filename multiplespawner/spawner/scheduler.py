@@ -78,9 +78,15 @@ class Scheduler:
 
 
 def format_task_template(task_template, **kwargs):
+    spawner_str_kwargs = {k:v for k, v in task_template["spawner"]["kwargs"].items()
+                          if isinstance(v, str) or isinstance(v, list) or isinstance(v, dict)}
     for key, value in kwargs.items():
-        if key in task_template:
-            task_template[key].format(value)
+        try:
+            recursive_format(spawner_str_kwargs, {key: value})
+        except TypeError:
+            pass
+
+    task_template["spawner"]["kwargs"].update(spawner_str_kwargs)
     return task_template
 
 
@@ -107,3 +113,24 @@ def create_notebook_task_template(
         notebook_task_template["spawner"]["kwargs"].update(spawner_template_config)
 
     return notebook_task_template
+
+
+def recursive_format(input, value):
+    if isinstance(input, list):
+        for item_index, item_value in enumerate(input):
+            if isinstance(item_value, str):
+                try:
+                    input[item_index] = item_value.format(**value)
+                except KeyError:
+                    continue
+            recursive_format(item_value, value)
+    if isinstance(input, dict):
+        for input_key, input_value in input.items():
+            if isinstance(input_value, str):
+                try:
+                    input[input_key] = input_value.format(**value)
+                except KeyError:
+                    continue
+            recursive_format(input_value, value)
+    if hasattr(input, "__dict__"):
+        recursive_format(input.__dict__, value)

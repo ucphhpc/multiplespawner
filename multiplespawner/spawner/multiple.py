@@ -41,8 +41,6 @@ class MultipleSpawner(Spawner):
 
     resource_start_timeout = Integer(default_value=30, allow_none=False, config=True)
 
-    resource_authenticator = None
-
     resource_is_configured = Bool(default_value=False)
 
     scheduler = Instance(Scheduler, allow_none=True)
@@ -327,13 +325,13 @@ class MultipleSpawner(Spawner):
         ):
             auth_kwargs = self.notebook["spawner_template"]["authenticator"]["kwargs"]
 
-        if not self.resource_authenticator:
-            if auth_class:
-                self.resource_authenticator = make(
-                    auth_class, *auth_args, **auth_kwargs
-                )
-        if self.resource_authenticator:
-            credentials = getattr(self.resource_authenticator, "credentials", None)
+        resource_authenticator = None
+        if auth_class:
+            resource_authenticator = make(
+                auth_class, *auth_args, **auth_kwargs
+            )
+        if resource_authenticator:
+            credentials = getattr(resource_authenticator, "credentials", None)
 
         if not supported_resource(provider, resource_type):
             raise RuntimeError(
@@ -400,7 +398,7 @@ class MultipleSpawner(Spawner):
         num_attempts = 0
         while (
             num_attempts < self.resource_start_timeout
-            and "endpoint" not in self.resource["details"]
+            and "endpoint" not in self.resource["details"] or not self.resource["details"]["endpoint"]
         ):
             self.resource["details"]["endpoint"] = session_pool.endpoint(
                 self.resource["id"]
