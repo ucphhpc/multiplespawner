@@ -411,18 +411,24 @@ class MultipleSpawner(Spawner):
             time.sleep(1)
             num_attempts += 1
 
-        # Configure the orchestratrated resource
+        # Verify if the authenticator is prepared for the endpoint.
+        # Configure the orchestratrated resource.
         if (
             "endpoint" in self.resource["details"]
             and self.resource["details"]["endpoint"]
-            and not self.resource_is_configured
         ):
-            if self.run_configurer(
-                self.resource["details"]["endpoint"],
-                self.notebook["spawner_template"],
-                credentials=credentials,
-            ):
-                self.resource_is_configured = True
+            endpoint = self.resource["details"]["endpoint"]
+
+            if not self.resource_authenticator.is_prepared:
+                self.resource_authenticator.prepare(endpoint)
+
+            if not self.resource_is_configured:
+                if self.run_configurer(
+                    endpoint,
+                    self.notebook["spawner_template"],
+                    credentials=credentials,
+                ):
+                    self.resource_is_configured = True
 
         # TODO, Configure the resource with the required dependencies
         # session_pool.configure(self.identifier)
@@ -441,6 +447,11 @@ class MultipleSpawner(Spawner):
         status = await self.poll()
         if status is not None:
             return
+
+        # TODO, load the endpoint
+        endpoint = None
+        if self.resource_authenticator and self.resource_authenticator.is_prepared:
+            self.resource_authenticator.cleanup(endpoint)
 
         if not self.scheduler:
             return None

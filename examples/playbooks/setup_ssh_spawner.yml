@@ -2,13 +2,15 @@
   # Git clone the sshspawner
   vars:
     ansible_python_interpreter: /usr/bin/python
+    python3_path: /usr/bin/python3
+    pip3_path: /usr/bin/pip3
 
     sshspawner:
-      name: sshspawner
-      src: /tmp/sshspawner
-      repo: https://github.com/NERSC/sshspawner.git
-      src_getport: "{{ sshspawner.src }}/scripts/get_port.py"
-      dest_getport: /usr/local/bin/get_port.py
+      name: "sshspawner"
+      src: "/tmp/sshspawner"
+      repo: "https://github.com/NERSC/sshspawner.git"
+      src_getport: "/tmp/sshspawner/scripts/get_port.py"
+      dest_getport: "/usr/local/bin/get_port.py"
 
   tasks:
   - name: install packages
@@ -16,6 +18,14 @@
       state: present
       name:
         - git
+        - python3
+
+  - name: install python packages
+    pip:
+      name:
+        - jupyter
+      extra_args: --user
+      executable: "{{ pip3_path }}"
 
   - name: "clone {{ sshspawner.name }}"
     git:
@@ -25,10 +35,10 @@
     with_items:
       - { repo: "{{ sshspawner.repo }}", dest: "{{ sshspawner.src }}" }
 
-  - name: install sshspawner
+  - name: "install {{ sshspawner.name }}"
     shell:
-      cmd: "/usr/local/bin/python3 setup.py install"
-      chdir: "{{ sshspawner.dest }}"
+      cmd: "{{ python3_path }} setup.py install"
+      chdir: "{{ sshspawner.src }}"
 
   - name: move the get_port.py to the default location
     command: "cp {{ item.src }} {{ item.dest }}"

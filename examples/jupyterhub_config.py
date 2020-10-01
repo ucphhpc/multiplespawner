@@ -6,6 +6,8 @@ c = get_config()
 c.JupyterHub.ip = "0.0.0.0"
 c.JupyterHub.port = 8000
 
+c.Spawner.start_timeout = 60 * 5
+
 c.JupyterHub.debug_proxy = True
 
 c.JupyterHub.spawner_class = "multiplespawner.MultipleSpawner"

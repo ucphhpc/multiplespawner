@@ -44,7 +44,8 @@
         "kwargs": {
             "remote_hosts": ["{endpoint}"],
             "remote_port": "22",
-            "ssh_keyfile": "~/.corc/ssh/id_rsa"
+            "ssh_keyfile": "~/.corc/ssh/id_rsa",
+            "remote_port_command": "/usr/bin/python3 /usr/local/bin/get_port.py"
         },
         "resource_type": "virtual_machine",
         "configurer": {
