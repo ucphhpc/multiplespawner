@@ -43,7 +43,8 @@
         "class": "sshspawner.sshspawner.SSHSpawner",
         "kwargs": {
             "remote_hosts": ["{endpoint}"],
-            "remote_port": "22"
+            "remote_port": "22",
+            "ssh_keyfile": "~/.corc/ssh/id_rsa"
         },
         "resource_type": "virtual_machine",
         "configurer": {
@@ -52,7 +53,7 @@
                 "host_variables": {
                     "ansible_user": "opc",
                     "ansible_become": "yes",
-                    "verbosity": "verbosity"
+                    "ansible_become_method": "sudo"
                 },
                 "host_settings": {
                     "group": "compute",
