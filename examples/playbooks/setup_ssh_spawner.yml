@@ -1,0 +1,36 @@
+- hosts: compute
+  # Git clone the sshspawner
+  vars:
+    ansible_python_interpreter: /usr/bin/python
+
+    sshspawner:
+      name: sshspawner
+      src: /tmp/sshspawner
+      repo: https://github.com/NERSC/sshspawner.git
+      src_getport: "{{ sshspawner.src }}/scripts/get_port.py"
+      dest_getport: /usr/local/bin/get_port.py
+
+  tasks:
+  - name: install packages
+    yum:
+      state: present
+      name:
+        - git
+
+  - name: "clone {{ sshspawner.name }}"
+    git:
+      repo: "{{ item.repo }}"
+      dest: "{{ item.dest }}"
+      clone: yes
+    with_items:
+      - { repo: "{{ sshspawner.repo }}", dest: "{{ sshspawner.src }}" }
+
+  - name: install sshspawner
+    shell:
+      cmd: "/usr/local/bin/python3 setup.py install"
+      chdir: "{{ sshspawner.dest }}"
+
+  - name: move the get_port.py to the default location
+    command: "cp {{ item.src }} {{ item.dest }}"
+    with_items:
+      - { src: "{{ sshspawner.src_getport }}", dest: "{{ sshspawner.dest_getport }}" }
