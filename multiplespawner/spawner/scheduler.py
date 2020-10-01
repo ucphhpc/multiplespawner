@@ -78,8 +78,11 @@ class Scheduler:
 
 
 def format_task_template(task_template, **kwargs):
-    spawner_str_kwargs = {k:v for k, v in task_template["spawner"]["kwargs"].items()
-                          if isinstance(v, str) or isinstance(v, list) or isinstance(v, dict)}
+    spawner_str_kwargs = {
+        k: v
+        for k, v in task_template["spawner"]["kwargs"].items()
+        if isinstance(v, str) or isinstance(v, list) or isinstance(v, dict)
+    }
     for key, value in kwargs.items():
         try:
             recursive_format(spawner_str_kwargs, {key: value})
