@@ -39,6 +39,8 @@ class MultipleSpawner(Spawner):
 
     resource = Dict(default_value={}, config=False)
 
+    resource_authenticator = None
+
     resource_start_timeout = Integer(default_value=30, allow_none=False, config=True)
 
     resource_is_configured = Bool(default_value=False)
@@ -191,8 +193,9 @@ class MultipleSpawner(Spawner):
         configuration = configurer.gen_configuration(
             spawner_template["configurer"]["options"]
         )
-        configurer.apply(endpoint, configuration=configuration, credentials=credentials)
-        self.resource_is_configured = True
+        return configurer.apply(
+            endpoint, configuration=configuration, credentials=credentials
+        )
 
     def create_scheduler(self):
         # From https://github.com/jupyterhub/wrapspawner/blob/a8705e376dc9ecde3f2f99b44cd5b11c7ce1edd8/wrapspawner/wrapspawner.py#L86
@@ -325,13 +328,14 @@ class MultipleSpawner(Spawner):
         ):
             auth_kwargs = self.notebook["spawner_template"]["authenticator"]["kwargs"]
 
-        resource_authenticator = None
-        if auth_class:
-            resource_authenticator = make(
-                auth_class, *auth_args, **auth_kwargs
-            )
-        if resource_authenticator:
-            credentials = getattr(resource_authenticator, "credentials", None)
+        if not self.resource_authenticator:
+            if auth_class:
+                self.resource_authenticator = make(
+                    auth_class, *auth_args, **auth_kwargs
+                )
+
+        if self.resource_authenticator:
+            credentials = getattr(self.resource_authenticator, "credentials", None)
 
         if not supported_resource(provider, resource_type):
             raise RuntimeError(
@@ -398,7 +402,8 @@ class MultipleSpawner(Spawner):
         num_attempts = 0
         while (
             num_attempts < self.resource_start_timeout
-            and "endpoint" not in self.resource["details"] or not self.resource["details"]["endpoint"]
+            and "endpoint" not in self.resource["details"]
+            or not self.resource["details"]["endpoint"]
         ):
             self.resource["details"]["endpoint"] = session_pool.endpoint(
                 self.resource["id"]
@@ -412,11 +417,12 @@ class MultipleSpawner(Spawner):
             and self.resource["details"]["endpoint"]
             and not self.resource_is_configured
         ):
-            self.run_configurer(
+            if self.run_configurer(
                 self.resource["details"]["endpoint"],
                 self.notebook["spawner_template"],
                 credentials=credentials,
-            )
+            ):
+                self.resource_is_configured = True
 
         # TODO, Configure the resource with the required dependencies
         # session_pool.configure(self.identifier)
