@@ -2,7 +2,7 @@ import os
 import time
 from jupyterhub.spawner import Spawner
 from traitlets import Dict, Unicode, default, Integer, directional_link, Instance, Bool
-from multiplespawner.helpers import make
+from multiplespawner.helpers import make, recursive_format
 from multiplespawner.orchestration.orchestration import (
     create_pool,
     load_pool,
@@ -21,6 +21,42 @@ from multiplespawner.spawner.deployment import get_spawner_deployment
 
 from corc.providers.types import get_orchestrator
 from corc.providers.config import get_provider_profile
+
+
+def format_template(template, environment_kwargs=None):
+    if not environment_kwargs:
+        environment_kwargs = {}
+
+    spawner_str_kwargs = {
+        k: v
+        for k, v in template["spawner"]["kwargs"].items()
+        if isinstance(v, str) or isinstance(v, list) or isinstance(v, dict)
+    }
+
+    configurer_options = {
+        k: v
+        for k, v in template["configurer"]["options"].items()
+        if isinstance(v, str) or isinstance(v, list) or isinstance(v, dict)
+    }
+
+    authenticator_kwargs = {
+        k: v
+        for k, v in template["authenticator"]["kwargs"].items()
+        if isinstance(v, str) or isinstance(v, list) or isinstance(v, dict)
+    }
+
+    for key, value in environment_kwargs.items():
+        try:
+            recursive_format(spawner_str_kwargs, {key: value})
+            recursive_format(configurer_options, {key: value})
+            recursive_format(authenticator_kwargs, {key: value})
+        except TypeError:
+            pass
+
+    template["spawner"]["kwargs"].update(spawner_str_kwargs)
+    template["configurer"]["options"].update(configurer_options)
+    template["authenticator"]["kwargs"].update(authenticator_kwargs)
+    return template
 
 
 class MultipleSpawner(Spawner):
@@ -222,9 +258,9 @@ class MultipleSpawner(Spawner):
                 parent_spawner_config=parent_spawner_config,
             )
 
-            # Format the notebook task template
+            # Format the notebook task template with the orchestrated resource details
             formatted_task_template = format_task_template(
-                task_template, **self.resource["details"]
+                task_template, kwargs=self.resource["details"]
             )
             # Scheduler, Launch the notebook
             self.scheduler = Scheduler(task_template=formatted_task_template)
@@ -245,7 +281,6 @@ class MultipleSpawner(Spawner):
             )
             for trait in common_traits:
                 directional_link((self, trait), (self.scheduler.process_handler, trait))
-
         return self.scheduler
 
     def load_state(self, state):
@@ -298,6 +333,12 @@ class MultipleSpawner(Spawner):
         spawner_template = get_spawner_template(provider, resource_type)
         if not spawner_template:
             raise RuntimeError("Failed to find an appropriate spawner template")
+
+        # Dynamicly format the spawner_template options with the environment options
+        environment = self.get_env()
+        spawner_template = format_template(
+            spawner_template, environment_kwargs=environment
+        )
         self.notebook["spawner_template"] = spawner_template
 
         spawner_deployment = get_spawner_deployment(
@@ -366,10 +407,11 @@ class MultipleSpawner(Spawner):
             orchestrator_klass, options = get_orchestrator(resource_type, provider)
             provider_profile = get_provider_profile(provider)
             resource_config = orchestrator_klass.make_resource_config(
+                provider,
                 provider_profile=provider_profile,
-                cpu=resource_specification.cpu,
-                memory=resource_specification.memory,
-                gpus=resource_specification.gpu,
+                cpu=float(resource_specification.cpu),
+                memory=float(resource_specification.memory),
+                gpus=int(resource_specification.gpu),
             )
 
             # Determine whether the resource needs to be orchestrated beforehand
