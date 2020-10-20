@@ -1,15 +1,20 @@
 - hosts: compute
   # Git clone the sshspawner
   vars:
+    ansible_user: "opc"
+    ansible_become: "yes"
+    ansible_become_method: "sudo"
+    new_username: "spawner"
+
     ansible_python_interpreter: /usr/bin/python
     python3_path: /usr/bin/python3
     pip3_path: /usr/bin/pip3
 
     sshspawner:
       name: "sshspawner"
-      src: "/tmp/sshspawner"
+      src: "/home/opc/sshspawner"
       repo: "https://github.com/NERSC/sshspawner.git"
-      src_getport: "/tmp/sshspawner/scripts/get_port.py"
+      src_getport: "/home/opc/sshspawner/scripts/get_port.py"
       dest_getport: "/usr/local/bin/get_port.py"
 
   tasks:
@@ -44,3 +49,30 @@
     command: "cp {{ item.src }} {{ item.dest }}"
     with_items:
       - { src: "{{ sshspawner.src_getport }}", dest: "{{ sshspawner.dest_getport }}" }
+
+  - name: "Add executable user: {{ new_username }} "
+    user:
+      name: "{{ new_username }}"
+      home: "/home/{{ new_username }}"
+      shell: /bin/bash
+      groups: users
+      append: yes
+      
+  - name: Copy keys to user
+    authorized_key:
+      user: "{{ new_username }}"
+      state: present
+      key: "{{ public_key }}"
+
+  # If the default ansible_user should be renamed
+  # - name: Move home directory
+  #   user:
+  #     name: "{{ ansible_user }}"
+  #     home: "/home/{{ new_username }}"
+  #     move_home: yes
+  #   when: new_username is defined
+
+  # - name: "Rename {{ ansible_user}} to {{ new_username }}"
+  #   command: "usermod --login {{ new_username }} {{ ansible_user }}"
+  #   ignore_errors: true
+  #   when: new_username is defined
