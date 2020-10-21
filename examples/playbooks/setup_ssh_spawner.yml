@@ -34,10 +34,10 @@
 
   - name: "clone {{ sshspawner.name }}"
     git:
-      repo: "{{ item.repo }}"
-      dest: "{{ item.dest }}"
+      repo: "https://github.com/NERSC/sshspawner.git"
+      dest: "/home/opc/sshspawner"
       clone: yes
-    with_items:
+    loop:
       - { repo: "{{ sshspawner.repo }}", dest: "{{ sshspawner.src }}" }
 
   - name: "install {{ sshspawner.name }}"
@@ -47,7 +47,7 @@
 
   - name: move the get_port.py to the default location
     command: "cp {{ item.src }} {{ item.dest }}"
-    with_items:
+    loop:
       - { src: "{{ sshspawner.src_getport }}", dest: "{{ sshspawner.dest_getport }}" }
 
   - name: "Add executable user: {{ new_username }} "
