@@ -5,6 +5,7 @@
     ansible_become: "yes"
     ansible_become_method: "sudo"
     new_username: "spawner"
+    public_key: ""
 
     ansible_python_interpreter: /usr/bin/python
     python3_path: /usr/bin/python3
@@ -13,7 +14,7 @@
     sshspawner:
       name: "sshspawner"
       src: "/home/opc/sshspawner"
-      repo: "https://github.com/NERSC/sshspawner.git"
+      repo: "https://github.com/rasmunk/sshspawner.git"
       src_getport: "/home/opc/sshspawner/scripts/get_port.py"
       dest_getport: "/usr/local/bin/get_port.py"
 
@@ -34,8 +35,8 @@
 
   - name: "clone {{ sshspawner.name }}"
     git:
-      repo: "https://github.com/NERSC/sshspawner.git"
-      dest: "/home/opc/sshspawner"
+      repo: "{{ item.repo }}"
+      dest: "{{ item.dest }}"
       clone: yes
     loop:
       - { repo: "{{ sshspawner.repo }}", dest: "{{ sshspawner.src }}" }

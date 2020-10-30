@@ -1,5 +1,7 @@
+import asyncio
 import os
 import time
+from functools import partial
 from jupyterhub.spawner import Spawner
 from traitlets import Dict, Unicode, default, Integer, directional_link, Instance, Bool
 from multiplespawner.helpers import make, recursive_format
@@ -317,7 +319,7 @@ class MultipleSpawner(Spawner):
         self.scheduler = None
         self.notebook = {}
 
-    def start(self):
+    async def start(self):
         # Assign to-be notebook -> so that poll finds it
         spawn_options = self.user_options["spawn_options"]
         provider = spawn_options["provider"]
@@ -417,12 +419,14 @@ class MultipleSpawner(Spawner):
             # Determine whether the resource needs to be orchestrated beforehand
             # Or whether the spawner will take care of it
             # Assign notebook ID to the state of the spawner
-            identifier, resource = session_pool.create(
+            # See if we can grap the event loop
+            loop = asyncio.get_running_loop()
+            identifier, resource = await loop.run_in_executor(None, partial(session_pool.create,
                 orchestrator_klass,
                 options,
                 resource_config=resource_config,
                 credentials=credentials,
-            )
+            ))
             self.resource["id"], self.resource["object"] = identifier, resource
 
         if (
@@ -453,6 +457,7 @@ class MultipleSpawner(Spawner):
             time.sleep(1)
             num_attempts += 1
 
+        endpoint = None
         # Verify if the authenticator is prepared for the endpoint.
         # Configure the orchestratrated resource.
         if (
@@ -480,6 +485,11 @@ class MultipleSpawner(Spawner):
         # Fargate spawner
         if not self.scheduler:
             self.create_scheduler()
+
+        # Connect via the endpoint if provided
+        if endpoint:
+            ip, port = await self.scheduler.run()
+            return endpoint, port
         return self.scheduler.run()
 
     async def stop(self, now=False):
