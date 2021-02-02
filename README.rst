@@ -35,8 +35,8 @@ The expected structure of this configuration file can be seen below::
 
     [
         {
-            "name": "",                 # Name to show
-            "resource_type": "",        # (virtual_machine,container,bare_metal)
+            "name": "",                 # Name to show for the Spawner configuration
+            "resource_type": "",        # The resource_type that the Spawner expects (virtual_machine,container,bare_metal)
             "providers": [""],          # Which cloud providers support this spawner?
             "spawner": {
                 "class": "",            # The Spawner class that should be used by the MultipleSpawner to spawn the instance
@@ -114,7 +114,7 @@ The Spawner Deployment Configuration is for defining how a particular Jupyter se
 An example of the deployment configuration file structure can be seen below::
 
     {
-        "": [   # The key must defined the ``resource_type`` that the subdeployment configurations uses
+        "": [  # The key must defined the ``resource_type`` that the subdeployment configurations uses
 
             {} # The underlying list contains the set of attributes and their values 
                # that should be passed to the Spawner before it spawns the Jupyter Session
