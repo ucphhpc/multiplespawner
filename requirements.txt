@@ -1,4 +1,4 @@
 jupyterhub
 traitlets
-corc==0.0.1a17
-cryptography==2.8
+corc==0.0.2a1
+cryptography==3.2.1
