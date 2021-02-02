@@ -121,8 +121,7 @@ An example of the deployment configuration file structure can be seen below::
         ]
     }
 
-Currently the MultipleSpawner supports three different kinds of ``resource_types`` (``container``, ``virtual_machine``, and ``bare_metal``) as defined by the
- ``multiplespawner.runtime.resource.ResourceTypes`` class.
+Currently the MultipleSpawner supports three different kinds of ``resource_types`` (``container``, ``virtual_machine``, and ``bare_metal``) as define by the ``multiplespawner.runtime.resource.ResourceTypes`` class.
 A hello world example of the Spawner Deployment Configuration can be seen below::
 
     {
