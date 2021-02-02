@@ -30,6 +30,7 @@
     pip:
       name:
         - jupyter
+        - jupyterhub
       extra_args: --user
       executable: "{{ pip3_path }}"
 
