@@ -21,7 +21,6 @@ def get_spawner_template(provider, resource_type, path=None):
     if not isinstance(templates, list):
         return None
 
-    matching_template = None
     for template in templates:
         if (
             template["resource_type"] == resource_type

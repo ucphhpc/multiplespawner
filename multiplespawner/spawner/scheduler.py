@@ -1,4 +1,3 @@
-import copy
 from multiplespawner.helpers import import_klass, recursive_format
 
 
@@ -116,7 +115,9 @@ def create_notebook_task_template(
         notebook_task_template["spawner"]["kwargs"].update(parent_spawner_config)
 
     if "spawner" in spawner_template and "kwargs" in spawner_template["spawner"]:
-        notebook_task_template["spawner"]["kwargs"].update(spawner_template["spawner"]["kwargs"])
+        notebook_task_template["spawner"]["kwargs"].update(
+            spawner_template["spawner"]["kwargs"]
+        )
 
     if spawner_template_config:
         notebook_task_template["spawner"]["kwargs"].update(spawner_template_config)
