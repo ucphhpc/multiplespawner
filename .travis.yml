@@ -1,0 +1,21 @@
+language: python
+python:
+- '3.5'
+- '3.6'
+- '3.7'
+- '3.8'
+install:
+- pip install -e .[test]
+script:
+- python setup.py check -rms
+- flake8
+deploy:
+  skip_cleanup: true
+  distributions: sdist bdist_wheel
+  provider: pypi
+  skip_existing: true
+  on:
+    tags: true
+    branch: master
+  user: __token__
+  password:
