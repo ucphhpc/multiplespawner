@@ -2,6 +2,11 @@
 multiplespawner
 ===============
 
+.. image:: https://travis-ci.com/ucphhpc/multiplespawner.svg?branch=master
+    :target: https://travis-ci.com/ucphhpc/multiplespawner
+.. image:: https://badge.fury.io/py/multiplespawner.svg
+    :target: https://badge.fury.io/py/multiplespawner
+
 A JupyterHub Spawner that allows to select which resource their notebook should be spawned on.
 Internally it then uses spawner specific configurations to orchestrate the user on the given resources.
 
