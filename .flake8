@@ -1,3 +1,7 @@
 [flake8]
 exclude = build,venv,examples
-max-line-length = 89
+max-line-length = 88
+extend-ignore = E203, W503
+
+per-file-ignores =
+    multiplespawner/__init__.py:F401

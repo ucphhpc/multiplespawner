@@ -154,7 +154,8 @@ class MultipleSpawner(Spawner):
         for session_conf_attr, display_value in session_conf_attrs.items():
             input_entry = '<div class="form-group" name="session_configuration">'
             label_attribute = (
-                '<small class="form-text text-muted">{session_conf_description}:</small>'
+                '<small class="form-text text-muted">'
+                "{session_conf_description}:</small>"
             )
             input_attribute = '<input name="{session_conf_attr}" class="form-control" \
                               "type="text" value="{session_conf_value}" \
@@ -222,9 +223,9 @@ class MultipleSpawner(Spawner):
         options["spawn_options"]["session_configuration"] = {}
         for attr in SessionConfiguration.attributes():
             if attr in formdata:
-                options["spawn_options"]["session_configuration"][attr] = formdata[attr][
-                    0
-                ]
+                options["spawn_options"]["session_configuration"][attr] = formdata[
+                    attr
+                ][0]
 
         return options
 
@@ -238,13 +239,13 @@ class MultipleSpawner(Spawner):
         )
 
     def create_scheduler(self):
-        # From https://github.com/jupyterhub/wrapspawner/
-        # blob/a8705e376dc9ecde3f2f99b44cd5b11c7ce1edd8/wrapspawner/wrapspawner.py#L86
+        # From https://github.com/jupyterhub/wrapspawner/blob
+        # /a8705e376dc9ecde3f2f99b44cd5b11c7ce1edd8/wrapspawner/wrapspawner.py#L86
         if self.scheduler is None:
             # Use spawner to schedule the notebook on the orchestrated resource
             # Pass on the spawner options
-            # https://github.com/jupyterhub/wrapspawner/
-            # blob/master/wrapspawner/wrapspawner.py
+            # https://github.com/jupyterhub/wrapspawner/blob
+            # /master/wrapspawner/wrapspawner.py
             parent_spawner_config = dict(
                 user=self.user,
                 db=self.db,
@@ -273,8 +274,8 @@ class MultipleSpawner(Spawner):
             if not self.scheduler:
                 raise RuntimeError("Failed to create the Notebook Scheduler")
 
-            # Ensure that the state is reset since it will
-            # be this spawners state to begin with
+            # Ensure that the state is reset since it will be this spawners
+            #  state to begin with
             self.scheduler.call_sync_process("clear_state")
             if "state" in self.notebook:
                 # Refresh the spawners state
@@ -332,6 +333,8 @@ class MultipleSpawner(Spawner):
         resource_specification = ResourceSpecification(
             **spawn_options["resource_specification"]
         )
+
+        # Contains information about the session
         _ = SessionConfiguration(**spawn_options["session_configuration"])
 
         # Get available spawner templates and deployments
@@ -376,15 +379,17 @@ class MultipleSpawner(Spawner):
 
         if not self.resource_authenticator:
             if auth_class:
-                self.resource_authenticator = make(auth_class, *auth_args, **auth_kwargs)
+                self.resource_authenticator = make(
+                    auth_class, *auth_args, **auth_kwargs
+                )
 
         if self.resource_authenticator:
             credentials = getattr(self.resource_authenticator, "credentials", None)
 
         if not supported_resource(provider, resource_type):
             raise RuntimeError(
-                "The selected resource option is not supported - "
-                " provider: {}, type: {}".format(provider, resource_type)
+                "The selected resource option is not supported "
+                "- provider: {}, type: {}".format(provider, resource_type)
             )
 
         # Resource pools are externally defined and managed
@@ -428,7 +433,7 @@ class MultipleSpawner(Spawner):
                     orchestrator_klass,
                     options,
                     resource_config=resource_config,
-                    credentials=credentials,
+                    credentials=[credentials],
                 ),
             )
             self.resource["id"], self.resource["object"] = identifier, resource
