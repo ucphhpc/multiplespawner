@@ -53,7 +53,10 @@ class CorcPool(Pool):
         orchestrator_klass.validate_options(orchestrator_options)
         orchestrator = orchestrator_klass(orchestrator_options)
         # Blocking call
-        orchestrator.setup(resource_config=resource_config, credentials=credentials)
+        orchestrator.setup(
+            resource_config=resource_config,
+            credentials=credentials,
+        )
         if orchestrator.is_ready():
             identifier, resource = orchestrator.get_resource()
             self.members[identifier] = (orchestrator, resource)
@@ -62,10 +65,10 @@ class CorcPool(Pool):
 
     def endpoint(self, identifier):
         if identifier in self.members:
-            orchestrator, resource = self.members[identifier]
+            orchestrator, _ = self.members[identifier]
             orchestrator.poll()
             if orchestrator.is_reachable():
-                return orchestrator.endpoint()
+                return orchestrator.endpoint(select="public_ip")
         return None
 
 

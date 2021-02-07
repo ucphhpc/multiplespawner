@@ -58,14 +58,21 @@
                     "ansible_user": "opc",
                     "ansible_become": "yes",
                     "ansible_become_method": "sudo",
-                    "new_username": "{JUPYTERHUB_USER}"
+                    "users": [{
+                        "name": "{JUPYTERHUB_USER}",
+                        "auth_key": "{auth_key}",
+                        "sudoer": "yes"
+                    }]
                 },
                 "host_settings": {
                     "group": "compute",
                     "port": "22"
                 },
                 "apply_kwargs": {
-                    "playbook_path": ""
+                    "playbook_paths": [
+                        "/home/rasmus/.multiplespawner/playbooks/prep_environment.yml",
+                        "/home/rasmus/.multiplespawner/playbooks/change_user.yml"
+                    ]
                 }
             }
         },

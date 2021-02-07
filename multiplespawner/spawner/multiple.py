@@ -21,7 +21,7 @@ from multiplespawner.spawner.selection import get_available_providers
 from multiplespawner.spawner.template import get_spawner_template
 from multiplespawner.spawner.deployment import get_spawner_deployment
 
-from corc.providers.types import get_orchestrator
+from corc.providers.types import get_orchestrator, get_provider_resource_creation_id
 from corc.providers.config import get_provider_profile
 
 
@@ -234,6 +234,13 @@ class MultipleSpawner(Spawner):
         configuration = configurer.gen_configuration(
             spawner_template["configurer"]["options"]
         )
+
+        format_kwargs = dict(auth_key=credentials.public_key)
+
+        configuration = configurer.format_configuration(
+            configuration, kwargs=format_kwargs
+        )
+
         return configurer.apply(
             endpoint, configuration=configuration, credentials=credentials
         )
@@ -319,11 +326,12 @@ class MultipleSpawner(Spawner):
         if self.scheduler:
             self.scheduler.call_sync_process("clear_state")
 
-        if self.notebook:
-            self.notebook = {}
-
-        self.scheduler = None
+        self.is_configured = False
         self.notebook = {}
+        self.resource = {}
+        # self.resource_authenticator = None
+        # self.resource_is_configured = False
+        self.scheduler = None
 
     async def start(self):
         # Assign to-be notebook -> so that poll finds it
@@ -413,9 +421,15 @@ class MultipleSpawner(Spawner):
             # Memory, CPU, Accelerators
             orchestrator_klass, options = get_orchestrator(resource_type, provider)
             provider_profile = get_provider_profile(provider)
+            unique_creation_id = get_provider_resource_creation_id(
+                provider, resource_type
+            )
+            provider_kwargs = {unique_creation_id: self.user.name}
+
             resource_config = orchestrator_klass.make_resource_config(
                 provider,
                 provider_profile=provider_profile,
+                provider_kwargs=provider_kwargs,
                 cpu=float(resource_specification.cpu),
                 memory=float(resource_specification.memory),
                 gpus=int(resource_specification.gpu),
@@ -474,7 +488,6 @@ class MultipleSpawner(Spawner):
             and self.resource["details"]["endpoint"]
         ):
             endpoint = self.resource["details"]["endpoint"]
-
             if not self.resource_authenticator.is_prepared:
                 self.resource_authenticator.prepare(endpoint)
 

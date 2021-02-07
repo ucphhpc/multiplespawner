@@ -1,0 +1,11 @@
+- hosts: all
+
+  vars:
+    ansible_user: "opc"
+    ansible_become: "yes"
+    ansible_become_method: "sudo"
+    ansible_private_key_file: "~/.corc/ssh/id_rsa"
+
+  roles:
+    - { role: rasmunk/common/tools, become: yes }
+    - { role: rasmunk/services/jupyter/sshspawner, become: yes }
