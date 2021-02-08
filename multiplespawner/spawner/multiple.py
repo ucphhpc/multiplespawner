@@ -330,7 +330,7 @@ class MultipleSpawner(Spawner):
         self.notebook = {}
         self.resource = {}
         # self.resource_authenticator = None
-        # self.resource_is_configured = False
+        self.resource_is_configured = False
         self.scheduler = None
 
     async def start(self):
