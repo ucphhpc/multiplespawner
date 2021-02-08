@@ -48,7 +48,10 @@
                 "remote_hosts": ["{endpoint}"],
                 "remote_port": "22",
                 "ssh_keyfile": "~/.corc/ssh/id_rsa",
-                "remote_port_command": "/usr/bin/python3 /usr/local/bin/get_port.py"
+                "remote_port_command": "/usr/bin/python3 /usr/local/bin/get_port.py",
+                "hub_api_url": ["{JUPYTERHUB_API_URL}"],
+                "user": "{JUPYTERHUB_USER}",
+                "ip": "0.0.0.0"
             }
         },
         "configurer": {
