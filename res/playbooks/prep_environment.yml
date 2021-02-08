@@ -1,4 +1,4 @@
-- hosts: all
+- hosts: compute
 
   vars:
     ansible_user: "opc"
@@ -9,3 +9,4 @@
   roles:
     - { role: rasmunk/common/tools, become: yes }
     - { role: rasmunk/services/jupyter/sshspawner, become: yes }
+    - { role: rasmunk/services/jupyter/jupyterlab, become: yes }

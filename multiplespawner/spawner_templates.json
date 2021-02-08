@@ -62,7 +62,8 @@
                         "name": "{JUPYTERHUB_USER}",
                         "auth_key": "{auth_key}",
                         "sudoer": "yes"
-                    }]
+                    }],
+                    "remove_users": ["opc"]
                 },
                 "host_settings": {
                     "group": "compute",

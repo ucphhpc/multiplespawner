@@ -499,6 +499,9 @@ class MultipleSpawner(Spawner):
                 ):
                     self.resource_is_configured = True
 
+        if not self.resource_is_configured:
+            raise RuntimeError("The target resource was not properly configured")
+
         # TODO, Configure the resource with the required dependencies
         # session_pool.configure(self.identifier)
         # kubernetes spawner -> nodelabels
