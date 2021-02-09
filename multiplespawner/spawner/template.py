@@ -15,7 +15,8 @@ def get_spawner_template_path(path=None):
 
 
 def get_spawner_template(provider, resource_type, path=None):
-    path = get_spawner_template_path(path)
+    if not path:
+        path = get_spawner_template_path(path)
     templates = load_config(path=path)
 
     if not isinstance(templates, list):

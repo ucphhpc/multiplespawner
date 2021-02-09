@@ -15,7 +15,8 @@ def get_spawner_deployment_path(path=None):
 
 
 def get_spawner_deployment(resource_type, name=None, path=None):
-    path = get_spawner_deployment_path(path)
+    if not path:
+        path = get_spawner_deployment_path(path)
     config = load_config(path=path)
 
     if not isinstance(config, dict):

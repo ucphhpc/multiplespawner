@@ -18,8 +18,14 @@ from multiplespawner.spawner.scheduler import (
     create_notebook_task_template,
 )
 from multiplespawner.spawner.selection import get_available_providers
-from multiplespawner.spawner.template import get_spawner_template
-from multiplespawner.spawner.deployment import get_spawner_deployment
+from multiplespawner.spawner.template import (
+    get_spawner_template,
+    get_spawner_template_path,
+)
+from multiplespawner.spawner.deployment import (
+    get_spawner_deployment,
+    get_spawner_deployment_path,
+)
 
 from corc.providers.types import get_orchestrator, get_provider_resource_creation_id
 from corc.providers.config import get_provider_profile
@@ -345,8 +351,14 @@ class MultipleSpawner(Spawner):
         # Contains information about the session
         _ = SessionConfiguration(**spawn_options["session_configuration"])
 
+        spawner_template_path = get_spawner_template_path()
+        if not os.path.exists(spawner_template_path):
+            raise RuntimeError("The required Spawner template path does not exist")
+
         # Get available spawner templates and deployments
-        spawner_template = get_spawner_template(provider, resource_type)
+        spawner_template = get_spawner_template(
+            provider, resource_type, path=spawner_template_path
+        )
         if not spawner_template:
             raise RuntimeError("Failed to find an appropriate spawner template")
 
@@ -357,8 +369,12 @@ class MultipleSpawner(Spawner):
         )
         self.notebook["spawner_template"] = spawner_template
 
+        deployment_path = get_spawner_deployment_path()
+        if not os.path.exists(deployment_path):
+            raise RuntimeError("The required Spawner deployment path does not exist")
+
         spawner_deployment = get_spawner_deployment(
-            resource_type, name="oracle_linux_7_8"
+            resource_type, name="oracle_linux_7_8", path=deployment_path
         )
         if not spawner_deployment:
             raise RuntimeError("Failed to find an appropriate spawner deployment")
