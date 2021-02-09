@@ -1,41 +1,33 @@
 import json
 import os
+from multiplespawner.defaults import default_base_path
+from multiplespawner.util import makedirs, write, load, remove
+
+
+def get_config_path(path=None):
+    if "MULTIPLE_SPAWNER_CONFIG_FILE" in os.environ:
+        path = os.environ["MULTIPLE_SPAWNER_CONFIG_FILE"]
+    else:
+        # If no path is set programmatically
+        if not path:
+            path = os.path.join(default_base_path, "config")
+    return path
 
 
 def save_config(config, path=None):
-    if "MULTIPLESPAWNER_CONFIG_FILE" in os.environ:
-        path = os.environ["MULTIPLESPAWNER_CONFIG_FILE"]
-    else:
-        if not path:
-            # Ensure the directory path is there
-            path = os.path.join(os.path.expanduser("~"), ".multiplespawner", "config")
-            dir_path = os.path.dirname(path)
-            if not os.path.exists(dir_path):
-                try:
-                    os.makedirs(os.path.dirname(path))
-                except Exception as err:
-                    print("Failed to create config directory: {}".format(err))
+    path = get_config_path(path=path)
 
+    if not os.path.exists(path) and not makedirs(path):
+        return False
     if not config:
         return False
-
-    try:
-        with open(path, "w") as fh:
-            json.dump(config, fh)
-    except Exception as err:
-        print("Failed to save config: {}".format(err))
+    if not write(path, config, handler=json):
         return False
     return True
 
 
 def update_config(config, path=None):
-    if "MULTIPLESPAWNER_CONFIG_FILE" in os.environ:
-        path = os.environ["MULTIPLESPAWNER_CONFIG_FILE"]
-    else:
-        if not path:
-            # Ensure the directory path is there
-            path = os.path.join(os.path.expanduser("~"), ".multiplespawner", "config")
-
+    path = get_config_path(path=path)
     if not os.path.exists(path):
         raise Exception("Trying to update a config that doesn't exist")
 
@@ -43,62 +35,29 @@ def update_config(config, path=None):
         return False
 
     # Load config
-    existing_config = load_config(path=path)
+    existing_config = load_config(path)
     if not existing_config:
         return False
 
-    try:
-        with open(path, "w") as fh:
-            json.dump(config, fh)
-    except Exception as err:
-        print("Failed to save config: {}".format(err))
+    if not write(path, config, handler=json):
         return False
     return True
 
 
 def load_config(path=None):
-    config = {}
-    if "MULTIPLESPAWNER_CONFIG_FILE" in os.environ:
-        path = os.environ["MULTIPLESPAWNER_CONFIG_FILE"]
-    else:
-        if not path:
-            path = os.path.join(os.path.expanduser("~"), ".multiplespawner", "config")
-
+    path = get_config_path(path=path)
     if not os.path.exists(path):
         return False
-    try:
-        with open(path, "r") as fh:
-            config = json.load(fh)
-    except Exception as err:
-        print("Failed to load config: {}".format(err))
-    return config
+    return load(path, handler=json)
 
 
 def config_exists(path=None):
-    if "MULTIPLESPAWNER_CONFIG_FILE" in os.environ:
-        path = os.environ["MULTIPLESPAWNER_CONFIG_FILE"]
-    else:
-        if not path:
-            path = os.path.join(os.path.expanduser("~"), ".multiplespawner", "config")
-
-    if not path:
-        return False
-
+    path = get_config_path(path=path)
     return os.path.exists(path)
 
 
 def remove_config(path=None):
-    if "MULTIPLESPAWNER_CONFIG_FILE" in os.environ:
-        path = os.environ["MULTIPLESPAWNER_CONFIG_FILE"]
-    else:
-        if not path:
-            path = os.path.join(os.path.expanduser("~"), ".multiplespawner", "config")
-
+    path = get_config_path(path=path)
     if not os.path.exists(path):
         return True
-    try:
-        os.remove(path)
-    except Exception as err:
-        print("Failed to remove config: {}".format(err))
-        return False
-    return True
+    return remove(path)

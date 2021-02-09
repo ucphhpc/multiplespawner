@@ -1,81 +1,50 @@
 import os
-import json
 
 
-def get_config_path(path=None):
-    if "MULTIPLE_SPAWNER_CONFIG_FILE" in os.environ:
-        path = os.environ["MULTIPLE_SPAWNER_CONFIG_FILE"]
-    else:
-        # If no path is set programmatically
-        if not path:
-            path = os.path.join(os.path.expanduser("~"), ".multiplespawner", "config")
-    return path
-
-
-def save_config(config, path=None):
-    path = get_config_path(path)
-    dir_path = os.path.dirname(path)
-    if not os.path.exists(dir_path):
-        try:
-            os.makedirs(os.path.dirname(path))
-        except Exception as err:
-            print("Failed to create config directory: {}".format(err))
-
-    if not config:
-        return False
-
+def makedirs(path):
     try:
-        with open(path, "w") as fh:
-            json.dump(config, fh)
-    except Exception as err:
-        print("Failed to save config: {}".format(err))
-        return False
-    return True
-
-
-def update_config(config, path=None):
-    path = get_config_path(path)
-    if not config:
-        return False
-
-    try:
-        with open(path, "w") as fh:
-            json.dump(config, fh)
-    except Exception as err:
-        print("Failed to save config: {}".format(err))
-        return False
-    return True
-
-
-def load_config(path=None):
-    path = get_config_path(path)
-    if not os.path.exists(path):
-        return False
-
-    config = {}
-    try:
-        with open(path, "r") as fh:
-            config = json.load(fh)
-    except Exception as err:
-        print("Failed to load config: {}".format(err))
-    return config
-
-
-def config_exists(path=None):
-    path = get_config_path(path)
-    if not path:
-        return False
-    return os.path.exists(path)
-
-
-def remove_config(path=None):
-    path = get_config_path(path=path)
-
-    if not os.path.exists(path):
+        os.makedirs(path)
         return True
-    try:
-        os.remove(path)
     except Exception as err:
-        print("Failed to remove config: {}".format(err))
-        return False
-    return True
+        print("Failed to create directory path: {} - {}".format(path, err))
+    return False
+
+
+def write(path, content, mode="w", mkdirs=False, handler=None):
+    dir_path = os.path.dirname(path)
+    if not os.path.exists(dir_path) and mkdirs:
+        if not makedirs(dir_path):
+            return False
+    try:
+        with open(path, mode) as fh:
+            if handler:
+                handler.dump(content, fh)
+            else:
+                fh.write(content)
+        return True
+    except Exception as err:
+        print("Failed to save file: {} - {}".format(path, err))
+    return False
+
+
+def load(path, mode="r", readlines=False, handler=None):
+    try:
+        with open(path, mode) as fh:
+            if handler:
+                return handler.load(fh)
+            if readlines:
+                return fh.readlines()
+            return fh.read()
+    except Exception as err:
+        print("Failed to load file: {} - {}".format(path, err))
+    return False
+
+
+def remove(path):
+    try:
+        if os.path.exists(path):
+            os.remove(path)
+            return True
+    except Exception as err:
+        print("Failed to remove file: {} - {}".format(path, err))
+    return False
