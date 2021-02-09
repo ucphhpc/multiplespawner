@@ -25,7 +25,7 @@ long_description = open("README.rst").read()
 setup(
     name="multiplespawner",
     version=version_ns["__version__"],
-    description="",
+    description="A JupyterHub Spawner that enables Multi+Cloud deployment of Jupyter Notebooks",
     long_description=long_description,
     author="Rasmus Munk",
     author_email="munk1@live.dk",
