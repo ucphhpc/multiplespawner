@@ -2,6 +2,7 @@ import os
 import json
 from multiplespawner.defaults import default_base_path
 from multiplespawner.config.deployment import get_spawner_deployment_path
+from multiplespawner.config.playbooks import get_configurer_resource_path
 from multiplespawner.config.template import get_spawner_template_path
 from multiplespawner.util import makedirs, write
 
@@ -24,5 +25,16 @@ def prepare_multiplespawner_configs(
     template_path = get_spawner_template_path(path=template_path)
     if not os.path.exists(template_path):
         if not write(template_path, "{}", handler=json):
+            return False
+    return True
+
+
+def prepare_multiplespawner_playbooks(base_path=default_base_path, playbooks_path=None):
+    if not os.path.exists(base_path) and not create_base_path(base_path):
+        return False
+
+    playbooks_path = get_configurer_resource_path(path=playbooks_path)
+    if not os.path.exists(playbooks_path):
+        if not write(playbooks_path, "{}", handler=json):
             return False
     return True

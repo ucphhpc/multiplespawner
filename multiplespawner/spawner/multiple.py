@@ -4,7 +4,12 @@ import time
 from functools import partial
 from jupyterhub.spawner import Spawner
 from traitlets import Dict, Unicode, default, Integer, directional_link, Instance, Bool
+from multiplespawner.defaults import default_base_path
 from multiplespawner.helpers import make, recursive_format
+from multiplespawner.config.start import (
+    prepare_multiplespawner_configs,
+    prepare_multiplespawner_playbooks,
+)
 from multiplespawner.orchestration.orchestration import (
     create_pool,
     load_pool,
@@ -18,15 +23,14 @@ from multiplespawner.spawner.scheduler import (
     create_notebook_task_template,
 )
 from multiplespawner.spawner.selection import get_available_providers
-from multiplespawner.spawner.template import (
+from multiplespawner.config.template import (
     get_spawner_template,
     get_spawner_template_path,
 )
-from multiplespawner.spawner.deployment import (
+from multiplespawner.config.deployment import (
     get_spawner_deployment,
     get_spawner_deployment_path,
 )
-
 from corc.providers.types import get_orchestrator, get_provider_resource_creation_id
 from corc.providers.config import get_provider_profile
 
@@ -69,12 +73,11 @@ def format_template(template, environment_kwargs=None):
 
 class MultipleSpawner(Spawner):
 
-    config_file = Unicode(
+    configuration_directory = Unicode(
         trait=Unicode(),
-        default_value=os.path.join(
-            os.path.expanduser(".multiplespawner"), "config.json"
-        ),
-        help="Path to the MultipleSpawner json configuration file",
+        default_value=default_base_path,
+        help="Path to the default directory where "
+        "MultipleSpawner finds its configuration files",
     )
 
     is_configured = Bool(default_value=False)
@@ -209,6 +212,23 @@ class MultipleSpawner(Spawner):
             session_options="".join(session_options),
         )
         return form
+
+    def _init_spawner_configs(self):
+        # Ensure that the MultipleSpawner default configration
+        # Directory is there and that atleast the required configuration
+        # files exists
+        if not prepare_multiplespawner_configs(base_path=self.configuration_directory):
+            raise RuntimeError(
+                "Failed to prepare the MultipleSpawner configurations for spawning"
+            )
+
+        if not prepare_multiplespawner_playbooks(
+            base_path=self.configuration_directory
+        ):
+            raise RuntimeError(
+                "Failed to prepare the MultipleSpawner playbooks"
+                " directory for configuring resources"
+            )
 
     async def options_from_form(self, formdata):
         options = {"spawn_options": {}}
@@ -347,6 +367,8 @@ class MultipleSpawner(Spawner):
         resource_specification = ResourceSpecification(
             **spawn_options["resource_specification"]
         )
+
+        self._init_spawner_configs()
 
         # Contains information about the session
         _ = SessionConfiguration(**spawn_options["session_configuration"])
