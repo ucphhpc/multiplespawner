@@ -49,6 +49,11 @@
                 "remote_port": "22",
                 "ssh_keyfile": "~/.corc/ssh/{JUPYTERHUB_USER}_id_rsa",
                 "remote_port_command": "/usr/bin/python3 /usr/local/bin/get_port.py",
+                "ssh_backtunnel_client": "True",
+                "ssh_forward_credentials_paths": {
+                    "private_key_file": "~/.corc/ssh/{JUPYTERHUB_USER}_id_rsa",
+                    "public_key_file": "~/.corc/ssh/{JUPYTERHUB_USER}_id_rsa.pub"
+                },
                 "hub_api_url": "{JUPYTERHUB_API_URL}",
                 "user": "{JUPYTERHUB_USER}",
                 "ip": "0.0.0.0"
