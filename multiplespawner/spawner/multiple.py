@@ -353,10 +353,16 @@ class MultipleSpawner(Spawner):
             self.scheduler.call_sync_process("clear_state")
 
         if self.resource and "details" in self.resource:
-            if ("endpoint" in self.resource["details"] \
-                and self.resource["details"]["endpoint"]):
+            if (
+                "endpoint" in self.resource["details"]
+                and self.resource["details"]["endpoint"]
+            ):
                 # TODO, load the endpoint
-                if self.resource_authenticator and self.resource_authenticator.is_prepared:
+                if (
+                    self.resource_authenticator
+                    and self.resource_authenticator.is_prepared
+                ):
+                    endpoint = self.resource["details"]["endpoint"]
                     self.resource_authenticator.cleanup(endpoint)
 
         self.is_configured = False
