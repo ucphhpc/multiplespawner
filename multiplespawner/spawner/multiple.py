@@ -352,6 +352,14 @@ class MultipleSpawner(Spawner):
         if self.scheduler:
             self.scheduler.call_sync_process("clear_state")
 
+        if (
+            "endpoint" in self.resource["details"]
+            and self.resource["details"]["endpoint"]
+        ):
+            # TODO, load the endpoint
+            if self.resource_authenticator and self.resource_authenticator.is_prepared:
+                self.resource_authenticator.cleanup(endpoint)
+
         self.is_configured = False
         self.notebook = {}
         self.resource = {}
@@ -562,11 +570,6 @@ class MultipleSpawner(Spawner):
         status = await self.poll()
         if status is not None:
             return
-
-        # TODO, load the endpoint
-        endpoint = None
-        if self.resource_authenticator and self.resource_authenticator.is_prepared:
-            self.resource_authenticator.cleanup(endpoint)
 
         if not self.scheduler:
             return None
