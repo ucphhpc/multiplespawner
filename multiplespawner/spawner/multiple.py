@@ -528,7 +528,7 @@ class MultipleSpawner(Spawner):
             endpoint = self.resource["details"]["endpoint"]
             if not self.resource_authenticator.is_prepared:
                 self.resource_authenticator.prepare(endpoint)
-
+            # TODO Test that the resource_authenticator works
             if not self.resource_is_configured:
                 if self.run_configurer(
                     endpoint,

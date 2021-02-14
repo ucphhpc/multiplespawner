@@ -54,8 +54,7 @@ class CorcPool(Pool):
         orchestrator = orchestrator_klass(orchestrator_options)
         # Blocking call
         orchestrator.setup(
-            resource_config=resource_config,
-            credentials=credentials,
+            resource_config=resource_config, credentials=credentials,
         )
         if orchestrator.is_ready():
             identifier, resource = orchestrator.get_resource()
