@@ -51,8 +51,8 @@
                 "remote_port_command": "/usr/bin/python3 /usr/local/bin/get_port.py",
                 "ssh_backtunnel_client": "True",
                 "ssh_forward_credentials_paths": {
-                    "private_key_file": "/home/rasmus/.corc/ssh/{JUPYTERHUB_USER}_id_rsa",
-                    "public_key_file": "/home/rasmus/.corc/ssh/{JUPYTERHUB_USER}_id_rsa.pub"
+                    "private_key_file": "~/.corc/ssh/{JUPYTERHUB_USER}_id_rsa",
+                    "public_key_file": "~/.corc/ssh/{JUPYTERHUB_USER}_id_rsa.pub"
                 },
                 "hub_api_url": "{JUPYTERHUB_API_URL}",
                 "user": "{JUPYTERHUB_USER}",
@@ -70,7 +70,11 @@
                         "name": "{JUPYTERHUB_USER}",
                         "auth_key": "{auth_key}",
                         "sudoer": "yes"
-                    }]
+                    }],
+                    "jupyterhub": {
+                        "server_public_ip": "{server_public_ip}",
+                        "server_host_key": "{server_host_key}"
+                    }
                 },
                 "host_settings": {
                     "group": "compute",
@@ -78,8 +82,8 @@
                 },
                 "apply_kwargs": {
                     "playbook_paths": [
-                        "/home/rasmus/.multiplespawner/playbooks/prep_environment.yml",
-                        "/home/rasmus/.multiplespawner/playbooks/change_user.yml"
+                        "~/.multiplespawner/playbooks/prep_environment.yml",
+                        "~/.multiplespawner/playbooks/change_user.yml"
                     ]
                 }
             }

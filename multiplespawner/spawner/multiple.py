@@ -376,6 +376,7 @@ class MultipleSpawner(Spawner):
                 "endpoint" in self.resource["details"]
                 and self.resource["details"]["endpoint"]
             ):
+                # TODO, load the endpoint
                 if (
                     self.resource_authenticator
                     and self.resource_authenticator.is_prepared

@@ -10,3 +10,13 @@
     - { role: rasmunk/common/tools, become: yes }
     - { role: rasmunk/services/jupyter/sshspawner, become: yes }
     - { role: rasmunk/services/jupyter/jupyterlab, become: yes }
+
+
+  # Setup the target to accept the host key of the JupyterHub server
+  tasks:
+    - name: install the host key of the JupyterHub server
+      known_hosts:
+        name: "{{ jupyterhub.url }}"
+        path: /etc/ssh/ssh_known_hosts
+        key: "{{ jupyterhub.hostkey }}"
+        state: present
