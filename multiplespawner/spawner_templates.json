@@ -72,8 +72,8 @@
                         "sudoer": "yes"
                     }],
                     "jupyterhub": {
-                        "url": "{jupyterhub_url}",
-                        "hostkey": "{jupyterhub_hostkey}"
+                        "server_public_ip": "{server_public_ip}",
+                        "server_host_key": "{server_host_key}"
                     }
                 },
                 "host_settings": {
