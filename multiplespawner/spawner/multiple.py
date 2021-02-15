@@ -1,6 +1,7 @@
 import asyncio
 import os
 import time
+import requests
 from functools import partial
 from jupyterhub.spawner import Spawner
 from traitlets import Dict, Unicode, default, Integer, directional_link, Instance, Bool
@@ -10,6 +11,7 @@ from multiplespawner.config.start import (
     prepare_multiplespawner_configs,
     prepare_multiplespawner_playbooks,
 )
+from multiplespawner.network import get_host_key
 from multiplespawner.orchestration.orchestration import (
     create_pool,
     load_pool,
@@ -69,6 +71,17 @@ def format_template(template, environment_kwargs=None):
     template["configurer"]["options"].update(configurer_options)
     template["authenticator"]["kwargs"].update(authenticator_kwargs)
     return template
+
+
+def get_host_information():
+    # Public IP of this host
+    ext_ip = requests.get("https://api.ipify.org").text
+    # The ssh host_key
+    host_key = get_host_key("127.0.0.1")
+    known_host_str = "{endpoint} {key_type} {host_key}\n".format(
+        endpoint=ext_ip, key_type=host_key.get_name(), host_key=host_key.get_base64(),
+    )
+    return dict(public_ip=ext_ip, host_key=known_host_str)
 
 
 class MultipleSpawner(Spawner):
@@ -260,8 +273,14 @@ class MultipleSpawner(Spawner):
         configuration = configurer.gen_configuration(
             spawner_template["configurer"]["options"]
         )
-
         format_kwargs = dict(auth_key=credentials.public_key)
+
+        host_information = get_host_information()
+        if "public_ip" in host_information:
+            format_kwargs.update({"server_public_ip": host_information["public_ip"]})
+
+        if "host_key" in host_information:
+            format_kwargs.update({"server_host_key": host_information["host_key"]})
 
         configuration = configurer.format_configuration(
             configuration, kwargs=format_kwargs
@@ -351,6 +370,23 @@ class MultipleSpawner(Spawner):
         super().clear_state()
         if self.scheduler:
             self.scheduler.call_sync_process("clear_state")
+
+        if self.resource and "details" in self.resource:
+            if (
+                "endpoint" in self.resource["details"]
+                and self.resource["details"]["endpoint"]
+            ):
+                if (
+                    self.resource_authenticator
+                    and self.resource_authenticator.is_prepared
+                ):
+                    endpoint = self.resource["details"]["endpoint"]
+                    cleaned = self.resource_authenticator.cleanup(endpoint)
+                    self.log.info(
+                        "result of cleaning the resource authenticators: {}".format(
+                            cleaned
+                        )
+                    )
 
         self.is_configured = False
         self.notebook = {}
@@ -562,11 +598,6 @@ class MultipleSpawner(Spawner):
         status = await self.poll()
         if status is not None:
             return
-
-        # TODO, load the endpoint
-        endpoint = None
-        if self.resource_authenticator and self.resource_authenticator.is_prepared:
-            self.resource_authenticator.cleanup(endpoint)
 
         if not self.scheduler:
             return None
