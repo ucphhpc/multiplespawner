@@ -16,7 +16,7 @@
   tasks:
     - name: install the host key of the JupyterHub server
       known_hosts:
-        name: "{{ jupyterhub.url }}"
+        name: "{{ jupyterhub.server.public_ip }}"
         path: /etc/ssh/ssh_known_hosts
-        key: "{{ jupyterhub.hostkey }}"
+        key: "{{ jupyterhub.server_host_key }}"
         state: present
