@@ -268,19 +268,24 @@ class MultipleSpawner(Spawner):
 
         return options
 
-    def run_configurer(self, endpoint, spawner_template, credentials=None):
+    def run_configurer(
+        self, endpoint, spawner_template, credentials=None, host_information=None
+    ):
         configurer = make(spawner_template["configurer"]["class"])
         configuration = configurer.gen_configuration(
             spawner_template["configurer"]["options"]
         )
+
         format_kwargs = dict(auth_key=credentials.public_key)
 
-        host_information = get_host_information()
-        if "public_ip" in host_information:
-            format_kwargs.update({"server_public_ip": host_information["public_ip"]})
+        if host_information:
+            if "public_ip" in host_information:
+                format_kwargs.update(
+                    {"server_public_ip": host_information["public_ip"]}
+                )
 
-        if "host_key" in host_information:
-            format_kwargs.update({"server_host_key": host_information["host_key"]})
+            if "host_key" in host_information:
+                format_kwargs.update({"server_host_key": host_information["host_key"]})
 
         configuration = configurer.format_configuration(
             configuration, kwargs=format_kwargs
@@ -376,7 +381,6 @@ class MultipleSpawner(Spawner):
                 "endpoint" in self.resource["details"]
                 and self.resource["details"]["endpoint"]
             ):
-                # TODO, load the endpoint
                 if (
                     self.resource_authenticator
                     and self.resource_authenticator.is_prepared
@@ -406,6 +410,9 @@ class MultipleSpawner(Spawner):
         )
 
         self._init_spawner_configs()
+        host_information = get_host_information()
+        if not self.hub.public_host:
+            self.hub.public_host = host_information["public_ip"]
 
         # Contains information about the session
         _ = SessionConfiguration(**spawn_options["session_configuration"])
@@ -571,6 +578,7 @@ class MultipleSpawner(Spawner):
                     endpoint,
                     self.notebook["spawner_template"],
                     credentials=credentials,
+                    host_information=host_information,
                 ):
                     self.resource_is_configured = True
 
