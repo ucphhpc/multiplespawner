@@ -55,6 +55,7 @@
                     "public_key_file": "~/.corc/ssh/{JUPYTERHUB_USER}_id_rsa.pub"
                 },
                 "hub_api_url": "http://127.0.0.1:8081/hub/api",
+                "hub_public_host": "{JUPYTERHUB_HOST}",
                 "user": "{JUPYTERHUB_USER}",
                 "ip": "0.0.0.0"
             }
