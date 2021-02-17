@@ -93,7 +93,8 @@
             "class": "corc.authenticator.SSHAuthenticator",
             "kwargs": {
                 "create_certificate": "True",
-                "key_name": "{JUPYTERHUB_USER}_id_rsa"}
+                "key_name": "{JUPYTERHUB_USER}_id_rsa",
+                "load_existing": "True"}
         }
     },
     {

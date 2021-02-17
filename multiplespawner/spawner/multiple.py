@@ -396,7 +396,7 @@ class MultipleSpawner(Spawner):
         self.is_configured = False
         self.notebook = {}
         self.resource = {}
-        # self.resource_authenticator = None
+        self.resource_authenticator = None
         self.resource_is_configured = False
         self.scheduler = None
 
