@@ -49,13 +49,15 @@
                 "remote_port": "22",
                 "ssh_keyfile": "~/.corc/ssh/{JUPYTERHUB_USER}_id_rsa",
                 "remote_port_command": "/usr/bin/python3 /usr/local/bin/get_port.py",
-                "ssh_backtunnel_client": "True",
+                "ssh_forward_tunnel_client": "True",
                 "ssh_forward_credentials_paths": {
                     "private_key_file": "~/.corc/ssh/{JUPYTERHUB_USER}_id_rsa",
                     "public_key_file": "~/.corc/ssh/{JUPYTERHUB_USER}_id_rsa.pub"
                 },
                 "hub_api_url": "http://127.0.0.1:8081/hub/api",
+                "hub_api_port": "8081",
                 "hub_activity_url": "http://127.0.0.1:8081/hub/api/users/{JUPYTERHUB_USER}/activity",
+                "hub_api_interface": "127.0.0.1",
                 "hub_public_host": "{JUPYTERHUB_HOST}",
                 "user": "{JUPYTERHUB_USER}",
                 "ip": "0.0.0.0"
