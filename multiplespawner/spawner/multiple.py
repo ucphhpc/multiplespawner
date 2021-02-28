@@ -401,9 +401,9 @@ class MultipleSpawner(Spawner):
                     endpoint = self.resource["details"]["endpoint"]
                     cleaned = self.resource_authenticator.cleanup(endpoint)
                     self.log.info(
-                        "result of cleaning the resource authenticators: {}".format(
-                            cleaned
-                        )
+                       "result of cleaning the resource authenticators: {}".format(
+                           cleaned
+                       )
                     )
 
         self.is_configured = False
@@ -598,12 +598,6 @@ class MultipleSpawner(Spawner):
         if not self.resource_is_configured:
             raise RuntimeError("The target resource was not properly configured")
 
-        # TODO, Configure the resource with the required dependencies
-        # session_pool.configure(self.identifier)
-        # kubernetes spawner -> nodelabels
-        # dockerspawner -> node labels
-        # SSH spawner
-        # Fargate spawner
         if not self.scheduler:
             self.create_scheduler()
 

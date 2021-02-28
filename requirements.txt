@@ -1,4 +1,4 @@
 jupyterhub
 jupyter_client
 traitlets==4.3.3
-corc==0.0.2a13
+corc==0.0.2a19
