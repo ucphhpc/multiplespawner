@@ -41,23 +41,30 @@ def format_template(template, environment_kwargs=None):
     if not environment_kwargs:
         environment_kwargs = {}
 
-    spawner_str_kwargs = {
-        k: v
-        for k, v in template["spawner"]["kwargs"].items()
-        if isinstance(v, str) or isinstance(v, list) or isinstance(v, dict)
-    }
+    spawner_str_kwargs = {}
+    configurer_options = {}
+    authenticator_kwargs = {}
 
-    configurer_options = {
-        k: v
-        for k, v in template["configurer"]["options"].items()
-        if isinstance(v, str) or isinstance(v, list) or isinstance(v, dict)
-    }
+    if "spawner" in template and "kwargs" in template["spawner"]:
+        spawner_str_kwargs = {
+            k: v
+            for k, v in template["spawner"]["kwargs"].items()
+            if isinstance(v, str) or isinstance(v, list) or isinstance(v, dict)
+        }
 
-    authenticator_kwargs = {
-        k: v
-        for k, v in template["authenticator"]["kwargs"].items()
-        if isinstance(v, str) or isinstance(v, list) or isinstance(v, dict)
-    }
+    if "configurer" in template and "options" in template["configurer"]:
+        configurer_options = {
+            k: v
+            for k, v in template["configurer"]["options"].items()
+            if isinstance(v, str) or isinstance(v, list) or isinstance(v, dict)
+        }
+
+    if "authenticator" in template and "kwargs" in template["authenticator"]:
+        authenticator_kwargs = {
+            k: v
+            for k, v in template["authenticator"]["kwargs"].items()
+            if isinstance(v, str) or isinstance(v, list) or isinstance(v, dict)
+        }
 
     for key, value in environment_kwargs.items():
         try:
@@ -67,9 +74,15 @@ def format_template(template, environment_kwargs=None):
         except TypeError:
             pass
 
-    template["spawner"]["kwargs"].update(spawner_str_kwargs)
-    template["configurer"]["options"].update(configurer_options)
-    template["authenticator"]["kwargs"].update(authenticator_kwargs)
+    if "spawner" in template and "kwargs" in template["spawner"]:
+        template["spawner"]["kwargs"].update(spawner_str_kwargs)
+
+    if "configurer" in template and "options" in template["configurer"]:
+        template["configurer"]["options"].update(configurer_options)
+
+    if "authenticator" in template and "kwargs" in template["authenticator"]:
+        template["authenticator"]["kwargs"].update(authenticator_kwargs)
+
     return template
 
 
@@ -440,7 +453,7 @@ class MultipleSpawner(Spawner):
             raise RuntimeError("The required Spawner deployment path does not exist")
 
         spawner_deployment = get_spawner_deployment(
-            resource_type, name="oracle_linux_7_8", path=deployment_path
+            resource_type, name="python_notebook", path=deployment_path
         )
         if not spawner_deployment:
             raise RuntimeError("Failed to find an appropriate spawner deployment")
@@ -493,7 +506,7 @@ class MultipleSpawner(Spawner):
                     "for resource type: {}".format(provider, resource_type)
                 )
 
-        # If resourc is set, load the ip/port from the session_pool
+        # If resource is set, load the ip/port from the session_pool
         # and return it straight away
         if not self.resource:
             # Might take a long time, hence we ensure there is a adequate start_time

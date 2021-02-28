@@ -73,7 +73,7 @@ class CorcPool(Pool):
 
 ResourcePools = {
     ResourceTypes.BARE_METAL: {Providers.LOCAL: CorcPool},
-    ResourceTypes.CONTAINER: {},
+    ResourceTypes.CONTAINER: {Providers.LOCAL: CorcPool},
     ResourceTypes.VIRTUAL_MACHINE: {Providers.OCI: CorcPool},
 }
 
