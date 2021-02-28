@@ -386,12 +386,12 @@ class MultipleSpawner(Spawner):
                     and self.resource_authenticator.is_prepared
                 ):
                     endpoint = self.resource["details"]["endpoint"]
-                    cleaned = self.resource_authenticator.cleanup(endpoint)
-                    self.log.info(
-                        "result of cleaning the resource authenticators: {}".format(
-                            cleaned
-                        )
-                    )
+                    #cleaned = self.resource_authenticator.cleanup(endpoint)
+                    #self.log.info(
+                    #    "result of cleaning the resource authenticators: {}".format(
+                    #        cleaned
+                    #    )
+                    #)
 
         self.is_configured = False
         self.notebook = {}
