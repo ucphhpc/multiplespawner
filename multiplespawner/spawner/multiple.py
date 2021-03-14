@@ -28,12 +28,17 @@ from multiplespawner.spawner.selection import get_available_providers
 from multiplespawner.config.template import (
     get_spawner_template,
     get_spawner_template_path,
+    has_configurer,
 )
 from multiplespawner.config.deployment import (
     get_spawner_deployment,
     get_spawner_deployment_path,
 )
-from corc.providers.types import get_orchestrator, get_provider_resource_creation_id
+from corc.providers.types import (
+    get_orchestrator,
+    get_provider_resource_creation_id,
+    is_orchestrateable,
+)
 from corc.providers.config import get_provider_profile
 
 
@@ -178,6 +183,7 @@ class MultipleSpawner(Spawner):
                     resource_value=getattr(resource_spec, resource_attr),
                 )
             )
+
         input_end = "</div>"
         resource_spec_options.append(input_end)
 
@@ -210,8 +216,6 @@ class MultipleSpawner(Spawner):
             session_options.append(input_end)
 
         # Resource type deployments
-        # TODO, dynamically provide the deployment dropdown after the
-        # selection of a resource type
         form = """
             <label for="provider">Provider:</label>
             <select class="form-control" name="provider" required>
@@ -401,9 +405,9 @@ class MultipleSpawner(Spawner):
                     endpoint = self.resource["details"]["endpoint"]
                     cleaned = self.resource_authenticator.cleanup(endpoint)
                     self.log.info(
-                       "result of cleaning the resource authenticators: {}".format(
-                           cleaned
-                       )
+                        "result of cleaning the resource authenticators: {}".format(
+                            cleaned
+                        )
                     )
 
         self.is_configured = False
@@ -506,86 +510,97 @@ class MultipleSpawner(Spawner):
                     "for resource type: {}".format(provider, resource_type)
                 )
 
-        # If resource is set, load the ip/port from the session_pool
-        # and return it straight away
-        if not self.resource:
-            # Might take a long time, hence we ensure there is a adequate start_time
-            # TODO, create correcly formatted provider table
-            # Same applies to resource_type: VM -> INSTANCE
+        if is_orchestrateable(provider, resource_type):
+            # If resource is set, load the ip/port from the session_pool
+            # and return it straight away
+            if not self.resource:
+                # Might take a long time, hence we ensure there is a adequate start_time
+                # TODO, create correcly formatted provider table
+                # Same applies to resource_type: VM -> INSTANCE
 
-            # Memory, CPU, Accelerators
-            orchestrator_klass, options = get_orchestrator(resource_type, provider)
-            provider_profile = get_provider_profile(provider)
-            unique_creation_id = get_provider_resource_creation_id(
-                provider, resource_type
-            )
-            provider_kwargs = {unique_creation_id: self.user.name}
+                # Memory, CPU, Accelerators
+                orchestrator_klass, options = get_orchestrator(resource_type, provider)
+                provider_profile = get_provider_profile(provider)
+                unique_creation_id = get_provider_resource_creation_id(
+                    provider, resource_type
+                )
+                provider_kwargs = {unique_creation_id: self.user.name}
 
-            resource_config = orchestrator_klass.make_resource_config(
-                provider,
-                provider_profile=provider_profile,
-                provider_kwargs=provider_kwargs,
-                cpu=float(resource_specification.cpu),
-                memory=float(resource_specification.memory),
-                gpus=int(resource_specification.gpu),
-            )
+                resource_config = orchestrator_klass.make_resource_config(
+                    provider,
+                    provider_profile=provider_profile,
+                    provider_kwargs=provider_kwargs,
+                    cpu=float(resource_specification.cpu),
+                    memory=float(resource_specification.memory),
+                    gpus=int(resource_specification.gpu),
+                )
 
-            # Determine whether the resource needs to be orchestrated beforehand
-            # Or whether the spawner will take care of it
-            # Assign notebook ID to the state of the spawner
-            # See if we can grap the event loop
-            loop = asyncio.get_running_loop()
-            identifier, resource = await loop.run_in_executor(
-                None,
-                partial(
-                    session_pool.create,
-                    orchestrator_klass,
-                    options,
-                    resource_config=resource_config,
-                    credentials=[credentials],
-                ),
-            )
-            self.resource["id"], self.resource["object"] = identifier, resource
+                # Determine whether the resource needs to be orchestrated beforehand
+                # Or whether the spawner will take care of it
+                # Assign notebook ID to the state of the spawner
+                # See if we can grap the event loop
+                loop = asyncio.get_running_loop()
+                identifier, resource = await loop.run_in_executor(
+                    None,
+                    partial(
+                        session_pool.create,
+                        orchestrator_klass,
+                        options,
+                        resource_config=resource_config,
+                        credentials=[credentials],
+                    ),
+                )
+                self.resource["id"], self.resource["object"] = identifier, resource
 
-        if (
-            "object" not in self.resource
-            and not self.resource["object"]
-            and self.resource["id"]
-        ):
-            self.resource["object"] = session_pool.get(self.resource["id"])
+            if (
+                "object" not in self.resource
+                and not self.resource["object"]
+                and self.resource["id"]
+            ):
+                self.resource["object"] = session_pool.get(self.resource["id"])
 
-        if "object" not in self.resource or not self.resource["object"]:
-            raise RuntimeError(
-                "Failed to find a resource that match the specified configuration"
-            )
+            if "object" not in self.resource or not self.resource["object"]:
+                raise RuntimeError(
+                    "Failed to find a resource that match the specified configuration"
+                )
 
-        if "details" not in self.resource:
-            self.resource["details"] = {}
+            if "details" not in self.resource:
+                self.resource["details"] = {}
 
-        # Give a while for the resource to be ready to return the endpoint
-        num_attempts = 0
-        while (
-            num_attempts < self.resource_start_timeout
-            and "endpoint" not in self.resource["details"]
-            or not self.resource["details"]["endpoint"]
-        ):
-            self.resource["details"]["endpoint"] = session_pool.endpoint(
-                self.resource["id"]
-            )
-            time.sleep(1)
-            num_attempts += 1
+            # Give a while for the resource to be ready to return the endpoint
+            num_attempts = 0
+            while (
+                num_attempts < self.resource_start_timeout
+                and "endpoint" not in self.resource["details"]
+                or not self.resource["details"]["endpoint"]
+            ):
+                self.resource["details"]["endpoint"] = session_pool.endpoint(
+                    self.resource["id"]
+                )
+                time.sleep(1)
+                num_attempts += 1
 
-        endpoint = None
-        # Verify if the authenticator is prepared for the endpoint.
-        # Configure the orchestratrated resource.
-        if (
-            "endpoint" in self.resource["details"]
-            and self.resource["details"]["endpoint"]
-        ):
-            endpoint = self.resource["details"]["endpoint"]
-            if not self.resource_authenticator.is_prepared:
-                self.resource_authenticator.prepare(endpoint)
-            # TODO Test that the resource_authenticator works
+            if not self.resource["details"]["endpoint"]:
+                raise RuntimeError(
+                    "Failed to find a valid endpoint for the created resource: {}".format(
+                        self.resource["id"]
+                    )
+                )
+
+        if has_configurer(spawner_template):
+            endpoint = find_endpoint(provider, resource_type)
+            if not endpoint:
+                if not is_orchestrateable(provider, resource_type):
+                    raise RuntimeError(
+                        "Could not configure the resource since no endpoint was found"
+                    )
+                endpoint = self.resource["details"]["endpoint"]
+
+            if require_authentication(provider, resource_type, endpoint):
+                # Verify if the authenticator is prepared for the endpoint.
+                if not self.resource_authenticator.is_prepared:
+                    self.resource_authenticator.prepare(endpoint)
+
             if not self.resource_is_configured:
                 if self.run_configurer(
                     endpoint,
@@ -595,8 +610,8 @@ class MultipleSpawner(Spawner):
                 ):
                     self.resource_is_configured = True
 
-        if not self.resource_is_configured:
-            raise RuntimeError("The target resource was not properly configured")
+            if not self.resource_is_configured:
+                raise RuntimeError("The target resource was not properly configured")
 
         if not self.scheduler:
             self.create_scheduler()

@@ -2,20 +2,21 @@
     "container": [
         {
             "name": "python_notebook",
-            "image": "nielsbohr/python-notebook"
+            "image": "nielsbohr/python-notebook",
+            "providers": ["local", "oci"]
         }
     ],
     "virtual_machine": [
         {
             "name": "oracle_linux_7_8",
-            "provider": "oci",
-            "image": "Oracle Linux 7.8"
+            "image": "Oracle Linux 7.8",
+            "providers": ["local", "oci"]
         }
     ],
     "bare_metal": [
         {
             "name": "local_machine",
-            "provider": "local"
+            "providers": ["local", "oci"]
         }
     ]
 }

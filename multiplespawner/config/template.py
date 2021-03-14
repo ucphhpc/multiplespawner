@@ -28,3 +28,9 @@ def get_spawner_template(provider, resource_type, path=None):
         ):
             return template
     return None
+
+
+def has_configurer(spawner_template):
+    if isinstance(spawner_template, dict):
+        return "configurer" in spawner_template
+    return False
