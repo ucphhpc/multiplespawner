@@ -9,11 +9,11 @@ pipelines:
     group: pypi_package
     locking: off
     materials:
-      docker-jupyterhub_git:  # this is the name of material
+      multiplespawner_git:  # this is the name of material
         # says about type of material and url at once
-        git: https://github.com/ucphhpc/docker-jupyterhub.git
+        git: https://github.com/ucphhpc/multiplespawner.git
         branch: master
-        destination: docker-jupyterhub
+        destination: multiplespawner
       publish_python_git:
         git: https://github.com/rasmunk/publish-python-scripts.git
         branch: main
@@ -22,7 +22,7 @@ pipelines:
         destination: publish-python-scripts
     parameters:
       ARGS: ''
-      SRC_DIRECTORY: docker-jupyterhub
-      TEST_DIRECTORY: docker-jupyterhub
+      SRC_DIRECTORY: multiplespawner
+      TEST_DIRECTORY: multiplespawner
       PUSH_DIRECTORY: publish-python-scripts
     template: pypi_package
