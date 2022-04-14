@@ -36,7 +36,7 @@ setup(
     keywords=["JupyterHub", "Spawner"],
     install_requires=read_req("requirements.txt"),
     extras_require={
-        "test": read_req("requirements-test.txt"),
+        "test": read_req("tests/requirements.txt"),
         "dev": read_req("requirements-dev.txt"),
     },
     classifiers=[
