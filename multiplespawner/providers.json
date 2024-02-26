@@ -1,13 +1,8 @@
 [
     {
-        "name": "oci",
-        "display_name": "Oracle Cloud",
-        "types": ["container", "virtual_machine"]
-    },
-    {
-        "name": "ku",
-        "display_name": "KU Cloud",
-        "types": ["container", "virtual_machine"]
+        "name": "libvirt_provider",
+        "display_name": "Libvirt",
+        "types": ["virtual_machine"]
     },
     {
         "name": "local",

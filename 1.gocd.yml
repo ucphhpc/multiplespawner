@@ -2,6 +2,8 @@ environments:
   pypi_package:
     environments:
       GIT_USER: "{{SECRET:[github][username]}}"
+      TWINE_USERNAME: "{{SECRET:[pypi][libvirt_provider][username]}}"
+      TWINE_PASSWORD: "{{SECRET:[pypi][libvirt_provider][password]}}"
     pipelines:
       - multiplespawner
 pipelines:

@@ -3,7 +3,6 @@ from multiplespawner.runtime.resource import ResourceTypes
 
 
 class Pool:
-
     members = {}
 
     def create(self, *args, **kwargs):
@@ -41,7 +40,6 @@ class Pool:
 
 
 class CorcPool(Pool):
-
     # identifier, (orchestrator, resource)
     def create(
         self,
@@ -54,7 +52,8 @@ class CorcPool(Pool):
         orchestrator = orchestrator_klass(orchestrator_options)
         # Blocking call
         orchestrator.setup(
-            resource_config=resource_config, credentials=credentials,
+            resource_config=resource_config,
+            credentials=credentials,
         )
         if orchestrator.is_ready():
             identifier, resource = orchestrator.get_resource()

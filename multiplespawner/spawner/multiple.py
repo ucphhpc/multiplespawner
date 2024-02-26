@@ -79,13 +79,14 @@ def get_host_information():
     # The ssh host_key
     host_key = get_host_key("127.0.0.1")
     known_host_str = "{endpoint} {key_type} {host_key}\n".format(
-        endpoint=ext_ip, key_type=host_key.get_name(), host_key=host_key.get_base64(),
+        endpoint=ext_ip,
+        key_type=host_key.get_name(),
+        host_key=host_key.get_base64(),
     )
     return dict(public_ip=ext_ip, host_key=known_host_str)
 
 
 class MultipleSpawner(Spawner):
-
     configuration_directory = Unicode(
         trait=Unicode(),
         default_value=default_base_path,
@@ -388,9 +389,9 @@ class MultipleSpawner(Spawner):
                     endpoint = self.resource["details"]["endpoint"]
                     cleaned = self.resource_authenticator.cleanup(endpoint)
                     self.log.info(
-                       "result of cleaning the resource authenticators: {}".format(
-                           cleaned
-                       )
+                        "result of cleaning the resource authenticators: {}".format(
+                            cleaned
+                        )
                     )
 
         self.is_configured = False

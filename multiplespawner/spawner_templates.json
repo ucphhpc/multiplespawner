@@ -20,28 +20,9 @@
         "providers": ["local"]
     },
     {
-        "name": "DockerSpawner",
-        "class": "dockerspawner.DockerSpawner",
-        "kwargs": {"remove": "True"},
-        "resource_type": "container",
-        "providers": ["oci"]
-    },
-    {
-        "name": "Aws Container Spawner",
-        "class": "aws_fargate_spawner",
-        "resource_type": "container",
-        "providers": ["aws"]
-    },
-    {
-        "name": "Aws EC2 Instance",
-        "class": "aws_ec2_spawner",
-        "resource_type": "virtual_machine",
-        "providers": ["aws"]
-    },
-    {
         "name": "VirtualMachine Spawner",
         "resource_type": "virtual_machine",
-        "providers": ["oci"],
+        "providers": ["libvirt_provider"],
         "spawner": {
             "class": "sshspawner.sshspawner.SSHSpawner",
             "kwargs": {

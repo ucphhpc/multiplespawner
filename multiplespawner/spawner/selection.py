@@ -1,5 +1,4 @@
 class Providers:
-
     OCI = "oci"
     KU = "ku"
     LOCAL = "local"

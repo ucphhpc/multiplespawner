@@ -18,7 +18,6 @@ class ResourceSpecification:
 
 
 class ResourceTypes:
-
     BARE_METAL = "bare_metal"
     VIRTUAL_MACHINE = "virtual_machine"
     CONTAINER = "container"

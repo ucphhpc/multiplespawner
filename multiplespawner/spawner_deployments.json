@@ -7,9 +7,9 @@
     ],
     "virtual_machine": [
         {
-            "name": "oracle_linux_7_8",
-            "provider": "oci",
-            "image": "Oracle Linux 7.8"
+            "name": "ubuntu_20_04",
+            "provider": "libvirt_provider",
+            "image": "Ubuntu 20.04"
         }
     ],
     "bare_metal": [

@@ -77,7 +77,6 @@ class Scheduler:
 
 
 def format_task_template(task_template, kwargs=None):
-
     if not kwargs:
         kwargs = {}
 
